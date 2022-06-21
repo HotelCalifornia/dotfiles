@@ -11,6 +11,7 @@ dotfiles:
   d_nvim:
     src: config/nvim
     dst: ~/.config/nvim
+    ignore_missing_in_dotdrop: true
   d_powerline:
     src: config/powerline
     dst: ~/.config/powerline
