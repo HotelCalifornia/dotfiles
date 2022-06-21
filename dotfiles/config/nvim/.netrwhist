@@ -1,0 +1,11 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhistcnt =9
+let g:netrw_dirhist_9='/home/abrooke/.local/share/nvim/plugged/onedark.nvim/lua/onedark'
+let g:netrw_dirhist_8='/home/abrooke/.local/share/nvim/plugged/onedark.nvim/lua'
+let g:netrw_dirhist_7='/home/abrooke/.local/share/nvim/plugged/onedark.nvim'
+let g:netrw_dirhist_6='/home/abrooke/.config/nvim'
+let g:netrw_dirhist_5='/home/abrooke/code/nsc/.git/hooks'
+let g:netrw_dirhist_4='/home/abrooke/code/nsc/.git'
+let g:netrw_dirhist_3='/home/abrooke/.config/powerline/themes/shell'
+let g:netrw_dirhist_2='/home/abrooke/.config/powerline/themes'
+let g:netrw_dirhist_1='/home/abrooke/.config/powerline'

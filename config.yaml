@@ -1,0 +1,22 @@
+config:
+  backup: true
+  banner: true
+  create: true
+  dotpath: dotfiles
+  keepdot: false
+  link_dotfile_default: nolink
+  link_on_import: nolink
+  longkey: false
+dotfiles:
+  d_nvim:
+    src: config/nvim
+    dst: ~/.config/nvim
+  d_powerline:
+    src: config/powerline
+    dst: ~/.config/powerline
+    chmod: '775'
+profiles:
+  fort-hannah:
+    dotfiles:
+    - d_nvim
+    - d_powerline
