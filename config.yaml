@@ -16,8 +16,12 @@ dotfiles:
     src: config/powerline
     dst: ~/.config/powerline
     chmod: '775'
+  f_plug.vim:
+    src: local/share/nvim/site/autoload/plug.vim
+    dst: ~/.local/share/nvim/site/autoload/plug.vim
 profiles:
   bash:
     dotfiles:
     - d_nvim
+    - f_plug.vim
     - d_powerline
