@@ -17,7 +17,7 @@ dotfiles:
     dst: ~/.config/powerline
     chmod: '775'
 profiles:
-  fort-hannah:
+  bash:
     dotfiles:
     - d_nvim
     - d_powerline
