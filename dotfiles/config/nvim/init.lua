@@ -27,28 +27,37 @@ vim.call('plug#end')
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
-require('onedark').setup {
-    style = 'warmer',
-    transparent = true,
-}
-require('onedark').load()
+function load_plugins()
+    require('onedark').setup {
+        style = 'warmer',
+        transparent = true,
+    }
+    require('onedark').load()
 
-require('lualine').setup {
-    options = { theme = 'onedark' },
-}
+    require('lualine').setup {
+        options = { theme = 'onedark' },
+    }
 
-require('nvim-web-devicons').setup()
+    require('nvim-web-devicons').setup()
 
-require('nvim-tree').setup {
-    open_on_tab = true,
-    update_focused_file = {
-        enable = true,
-    },
-    hijack_directories = {
-        enable = false,
-        auto_open = false,
-    },
-}
+    require('nvim-tree').setup {
+        open_on_tab = true,
+        update_focused_file = {
+            enable = true,
+        },
+        hijack_directories = {
+            enable = false,
+            auto_open = false,
+        },
+    }
+end
+
+-- if the call to load_plugins is unsuccessful, run :PlugUpdate and try again
+if not pcall(load_plugins) then
+    vim.cmd('PlugUpdate')
+    load_plugins()
+end
+
 --[[
 -- environment setup
 -- open NvimTree by default
