@@ -19,9 +19,24 @@ dotfiles:
   f_plug.vim:
     src: local/share/nvim/site/autoload/plug.vim
     dst: ~/.local/share/nvim/site/autoload/plug.vim
+  f_init.lua:
+    src: config/nvim/init.lua
+    dst: ~/.config/nvim/init.lua
+  f_bash_aliases:
+    src: bash_aliases
+    dst: ~/.bash_aliases
+  f_spitfire.sh:
+    src: config/rc/spitfire.sh
+    dst: ~/.config/rc/spitfire.sh
 profiles:
   bash:
     dotfiles:
     - d_nvim
     - f_plug.vim
     - d_powerline
+    - f_init.lua
+    - f_bash_aliases
+  bose:
+    include: [ bash ]
+    dotfiles:
+    - f_spitfire.sh

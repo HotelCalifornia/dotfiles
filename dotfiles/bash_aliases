@@ -1,0 +1,33 @@
+export GPG_TTY=$(tty)
+eval "$(ssh-agent -s)" > /dev/null
+
+export MANPATH="$MANPATH:${HOME}/.local/share/man"
+
+POWERLINE_DIR="$(pip show powerline-status | grep Location | cut -d' ' -f 2 -)"
+powerline-daemon -q
+POWERLINE_BASH_CONTINUATION=1
+POWERLINE_BASH_SELECT=1
+source "$POWERLINE_DIR/powerline/bindings/bash/powerline.sh"
+
+rgf() {
+    # no quotes around @ expansion because search patterns and escapes
+    path=""
+    rest=$@
+    if [[ -d $1 ]]; then
+        path="$1"
+        rest=${@:2}
+    fi
+    rg --files $path | rg $rest
+}
+
+func() {
+    type $1 | tail -n+2 | bat -l bash
+}
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# load any other scripts
+[ -d "$HOME/.config/rc" ] && for f in "$HOME/.config/rc"/*; do source $f; done
+
