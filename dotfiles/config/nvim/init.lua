@@ -58,11 +58,27 @@ if not pcall(load_plugins) then
     load_plugins()
 end
 
+function match_buf(buf, name)
+    return vim.api.nvim_buf_get_name(buf):match(name) ~= nil
+end
+
+function find_win(buf_name)
+    local wins = vim.api.nvim_list_wins()
+    for _, win in pairs(wins) do
+        if match_buf(vim.api.nvim_win_get_buf(win), buf_name) then return win end
+    end
+    return nil
+end
 --[[
 -- environment setup
 -- open NvimTree by default
 --  - if a directory was opened, cd to it and focus the tree
 --  - otherwise, direct NvimTree to find the file in the tree and not to steal focus
+-- if the current buffer is a PlugUpdate window
+--  - close it
+--  - if a file was opened
+--      - find the editor window
+--      - and focus it
 -- open a terminal split below the main file
 --]]
 vim.api.nvim_create_autocmd({ 'VimEnter' }, {
@@ -71,13 +87,24 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
         if vim.fn.isdirectory(data.file) == 1 then
             vim.cmd.cd(data.file)
             opts.focus = true
-        elseif vim.fn.filereadable(data.file) == 1 or (data.file == '' and vim.bo[data.buf].buftype == '') then
+        elseif vim.fn.filereadable(data.file) == 1 or (data.file == '' and vim.bo[data.buf].buftype == '')
+        then
             opts.find_file = true
         end
 
         require('nvim-tree.api').tree.toggle(opts)
 
         local current_buf = vim.api.nvim_get_current_buf()
+        if match_buf(current_buf, '%[Plugins%]') then
+            vim.api.nvim_win_close(vim.api.nvim_list_wins()[current_buf], false)
+            if opts.find_file then
+                win = find_win(data.file)
+                if win ~= nil then
+                    vim.api.nvim_set_current_win(win)
+                end
+            end
+        end
+
 
         local buf = vim.api.nvim_create_buf(false, false)
         local win = vim.api.nvim_open_win(buf, false, {
@@ -88,19 +115,18 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
     end
 })
 
--- close neovim if NvimTree is the last open buffer
+-- close neovim if
+--  - there are two open buffers, and they are both nvimtree and a terminal
+--  - there is one open buffer, and it is nvimtree
 vim.api.nvim_create_autocmd("BufEnter", {
     nested = true,
     callback = function()
-        local function match_buf(buf, name)
-            return vim.api.nvim_buf_get_name(buf):match(name) ~= nil
-        end
-        if
-            (#vim.api.nvim_list_wins() == 2
-                and (match_buf(2, 'NvimTree_') and match_buf(0, 'term://')))
-            or (#vim.api.nvim_list_wins() == 1 and match_buf(0, "NvimTree_"))
+        nvimtree = find_win('NvimTree_')
+        terminal = find_win('term://')
+        if (#vim.api.nvim_list_wins() == 2 and (nvimtree ~= nil and terminal ~= nil))
+            or (#vim.api.nvim_list_wins() == 1 and nvimtree ~= nil)
         then
-            vim.cmd 'quit'
+             vim.cmd 'quit'
         end
     end
 })
