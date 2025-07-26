@@ -104,14 +104,14 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
             if win ~= nil then
                 vim.api.nvim_set_current_win(win)
             end
+            local buf = vim.api.nvim_create_buf(false, false)
+            local win = vim.api.nvim_open_win(buf, false, {
+                split = 'below',
+                height = 10,
+            })
+            vim.api.nvim_win_call(win, function() return vim.cmd 'terminal' end)
         end
 
-        local buf = vim.api.nvim_create_buf(false, false)
-        local win = vim.api.nvim_open_win(buf, false, {
-            split = 'below',
-            height = 10,
-        })
-        vim.api.nvim_win_call(win, function() return vim.cmd 'terminal' end)
     end
 })
 
