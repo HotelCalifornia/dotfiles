@@ -76,9 +76,9 @@ end
 --  - otherwise, direct NvimTree to find the file in the tree and not to steal focus
 -- if the current buffer is a PlugUpdate window
 --  - close it
---  - if a file was opened
---      - find the editor window
---      - and focus it
+-- if a file was opened
+--  - find the editor window
+--  - and focus it
 -- open a terminal split below the main file
 --]]
 vim.api.nvim_create_autocmd({ 'VimEnter' }, {
@@ -97,14 +97,14 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
         local current_buf = vim.api.nvim_get_current_buf()
         if match_buf(current_buf, '%[Plugins%]') then
             vim.api.nvim_win_close(vim.api.nvim_list_wins()[current_buf], false)
-            if opts.find_file then
-                win = find_win(data.file)
-                if win ~= nil then
-                    vim.api.nvim_set_current_win(win)
-                end
-            end
         end
 
+        if opts.find_file then
+            win = find_win(data.file)
+            if win ~= nil then
+                vim.api.nvim_set_current_win(win)
+            end
+        end
 
         local buf = vim.api.nvim_create_buf(false, false)
         local win = vim.api.nvim_open_win(buf, false, {
@@ -146,4 +146,3 @@ vim.api.nvim_set_keymap('i', '<cr>', '', {
     replace_keycodes = true,
     callback = function() return vim.fn['coc#pum#visible']() == 1 and vim.fn['coc#pum#confirm']() or '<cr>' end,
 })
-
