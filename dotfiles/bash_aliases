@@ -1,3 +1,9 @@
+if [ -d "$HOME/.config/rc/pre" ]; then 
+    for f in "$HOME/.config/rc/pre"/*; do
+        source $f
+    done
+fi
+
 export GPG_TTY=$(tty)
 eval "$(ssh-agent -s)" > /dev/null
 
@@ -29,5 +35,9 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # load any other scripts
-[ -d "$HOME/.config/rc" ] && for f in "$HOME/.config/rc"/*; do source $f; done
+if [ -d "$HOME/.config/rc" ]; then
+    for f in "$HOME/.config/rc"/*; do 
+        [ -f $f ] && source $f
+    done
+fi
 

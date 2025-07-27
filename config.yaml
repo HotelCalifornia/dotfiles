@@ -32,21 +32,21 @@ dotfiles:
   f_spitfire.sh:
     src: config/rc/spitfire.sh
     dst: ~/.config/rc/spitfire.sh
-  f_mac.sh:
-    src: config/rc/mac.sh
-    dst: ~/.config/rc/mac.sh
   f_most.sh:
     src: config/rc/most.sh
     dst: ~/.config/rc/most.sh
-  f_pyenv.sh:
-    src: config/rc/pyenv.sh
-    dst: ~/.config/rc/pyenv.sh
   f_wezterm.sh:
     src: config/rc/wezterm.sh
     dst: ~/.config/rc/wezterm.sh
-  f_direnv.sh:
-    src: config/rc/direnv.sh
-    dst: ~/.config/rc/direnv.sh
+  f_0-mac.sh:
+    src: config/rc/pre/0-mac.sh
+    dst: ~/.config/rc/pre/0-mac.sh
+  f_1-pyenv.sh:
+    src: config/rc/pre/1-pyenv.sh
+    dst: ~/.config/rc/pre/1-pyenv.sh
+  f_2-direnv.sh:
+    src: config/rc/pre/2-direnv.sh
+    dst: ~/.config/rc/pre/2-direnv.sh
 profiles:
   bash:
     dotfiles:
@@ -67,7 +67,7 @@ profiles:
   hotel-laptop.local:
     include: [wezterm]
     dotfiles:
-    - f_mac.sh
     - f_most.sh
-    - f_pyenv.sh
-    - f_direnv.sh
+    - f_0-mac.sh
+    - f_1-pyenv.sh
+    - f_2-direnv.sh
