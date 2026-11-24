@@ -14,8 +14,9 @@ Features a declarative profile architecture, unified toolchain management via `u
 ├── dotfiles/
 │   ├── bash_aliases                # Shell aliases
 │   ├── config/
-│   │   ├── agents/skills/          # Canonical cross-harness AI agent skills
-│   │   │   └── terminal-pane-display/
+│   │   ├── agents/                 # Canonical cross-harness AI agent configs
+│   │   │   ├── rules/              # Modular agent rules (preferred-tools.md)
+│   │   │   └── skills/             # Agent skills (terminal-pane-display)
 │   │   ├── nvim/                   # Neovim configuration & plugins
 │   │   ├── powerline/              # Powerline prompt themes & configuration
 │   │   ├── rc/                     # Modular shell rc scripts (.wezterm-completion, vcpkg, mac)
@@ -42,10 +43,10 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | **`wezterm`** | Terminal emulator | `wezterm.lua` (with mixin loader), completions, `wezterm` installer, `pokemon-terminal`, `terminal-pane-display` skill. |
 | **`wsl`** | Windows Subsystem for Linux | Includes `[bash, neovim, user]` + `pokemon-terminal` (themes Windows Terminal, skips WezTerm GUI configs). |
 | **`user`** | General CLI utilities | Installs modern Rust/Python/Go CLI tools (`dust`, `eza`, `bat`, `glow`, `termaid`, `ripgrep`). |
-| **`gemini`** | Antigravity / Gemini CLI | Symlinks `~/.gemini/config/skills` $\rightarrow$ `~/.config/agents/skills`. |
-| **`claude`** | Claude Code | Symlinks `~/.claude/skills` $\rightarrow$ `~/.config/agents/skills`. |
+| **`gemini`** | Antigravity / Gemini CLI | Symlinks `~/.gemini/config/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
+| **`claude`** | Claude Code | Symlinks `~/.claude/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
 | **`wayland`** | Display server mixin | Deploys `~/.config/wezterm/mixins/wayland.lua` (`enable_wayland = false`). |
-| **`hotel-laptop-2.local`** | Primary workstation | Includes `[wezterm, neovim, user, gemini, claude]`. |
+| **`hotel-laptop-2.local`** | Primary workstation | Includes `[wezterm, neovim, user, gemini]`. |
 
 ---
 

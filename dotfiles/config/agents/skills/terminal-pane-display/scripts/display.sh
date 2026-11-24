@@ -141,7 +141,10 @@ ACTIVE_PANE_TARGET="${EXISTING_PANE:-$TARGET_PANE}"
 PANE_COLS=""
 if [[ -n "$EXISTING_PANE" ]]; then
   # Auto-resize existing pane based on content type if no explicit cells requested:
-  if [[ -n "$CODE_FILE" && $IS_MARKDOWN -eq 0 ]]; then
+  if [[ -n "$EXPLICIT_CELLS" ]]; then
+    "$SCRIPT_DIR/resize_pane.sh" "$EXISTING_PANE" "$EXPLICIT_CELLS" >/dev/null 2>&1 || true
+    PANE_COLS="$EXPLICIT_CELLS"
+  elif [[ -n "$CODE_FILE" && $IS_MARKDOWN -eq 0 ]]; then
     "$SCRIPT_DIR/resize_pane.sh" "$EXISTING_PANE" 125 >/dev/null 2>&1 || true
     PANE_COLS="125"
   elif [[ $IS_MARKDOWN -eq 1 ]]; then
@@ -211,6 +214,10 @@ render_markdown_file() {
   local termaid_bin="${TERMAID_SCRIPT}"
   local glow_bin="${GLOW_BIN}"
   local bat_bin="${BAT_BIN}"
+  local cols="${_BAKED_COLS}"
+  [[ -z "$cols" || "$cols" -le 0 ]] && cols=$(tput cols 2>/dev/null || echo 80)
+  local glow_width=$(( cols - 2 ))
+  [[ $glow_width -lt 40 ]] && glow_width=40
 
   if [[ -n "$glow_bin" ]]; then
     if [[ -n "$termaid_bin" ]] && command -v python3 >/dev/null 2>&1; then
@@ -241,16 +248,16 @@ pattern = re.compile(r'```mermaid\s*\n(.*?)\n```', re.DOTALL)
 sys.stdout.write(pattern.sub(replace_mermaid, content))
 PYEOF
         if [[ -n "$bat_bin" ]]; then
-          PAGER="$bat_bin --style=plain --paging=never" "$glow_bin" -p -
+          PAGER="$bat_bin --style=plain --paging=never" "$glow_bin" -w "$glow_width" -p -
         else
-          "$glow_bin" -p -
+          "$glow_bin" -w "$glow_width" -p -
         fi
       )
     else
       if [[ -n "$bat_bin" ]]; then
-        PAGER="$bat_bin --style=plain --paging=never" "$glow_bin" -p "$target_file"
+        PAGER="$bat_bin --style=plain --paging=never" "$glow_bin" -w "$glow_width" -p "$target_file"
       else
-        "$glow_bin" -p "$target_file"
+        "$glow_bin" -w "$glow_width" -p "$target_file"
       fi
     fi
   elif [[ -n "$bat_bin" ]]; then
