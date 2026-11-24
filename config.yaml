@@ -7,6 +7,7 @@ config:
   link_dotfile_default: nolink
   link_on_import: nolink
   longkey: false
+
 dotfiles:
   d_nvim:
     src: config/nvim
@@ -67,6 +68,10 @@ dotfiles:
     src: scripts/install-tools.py
     dst: ~/.local/bin/install-tools.py
     chmod: '755'
+  f_init_profile:
+    src: scripts/init-profile.py
+    dst: ~/.local/bin/init-profile.py
+    chmod: '755'
   d_skill_terminal_pane_display:
     src: config/agents/skills/terminal-pane-display
     dst: ~/.config/agents/skills/terminal-pane-display
@@ -77,6 +82,7 @@ dotfiles:
   d_agents_rules:
     src: config/agents/rules
     dst: ~/.config/agents/rules
+
 actions:
   ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
@@ -86,75 +92,87 @@ actions:
   install_user_tools: ~/.local/bin/install-tools.py --group user
   link_gemini_skills: ~/.local/bin/link-agent-skills.sh gemini
   link_claude_skills: ~/.local/bin/link-agent-skills.sh claude
+
 profiles:
   bash:
     dotfiles:
-    - d_powerline
-    - f_bash_aliases
-    - f_ensure_toolchains
-    - f_tools.toml
-    - f_install_tools
+      - d_powerline
+      - f_bash_aliases
+      - f_ensure_toolchains
+      - f_tools.toml
+      - f_install_tools
     actions:
-    - ensure_toolchains
-    - install_shell_tools
+      - ensure_toolchains
+      - install_shell_tools
+
   neovim:
     dotfiles:
-    - d_nvim
-    - f_plug.vim
-    - f_init.lua
-    - f_ensure_toolchains
-    - f_tools.toml
-    - f_install_tools
+      - d_nvim
+      - f_plug.vim
+      - f_init.lua
+      - f_ensure_toolchains
+      - f_tools.toml
+      - f_install_tools
     actions:
-    - ensure_toolchains
-    - install_neovim_tools
+      - ensure_toolchains
+      - install_neovim_tools
+
   wezterm:
     include: [bash]
     dotfiles:
-    - d_wezterm
-    - f_wezterm.sh
-    - f_wezterm-completion
-    - d_skill_terminal_pane_display
+      - d_wezterm
+      - f_wezterm.sh
+      - f_wezterm-completion
+      - d_skill_terminal_pane_display
     actions:
-    - install_wezterm
-    - install_terminal_tools
+      - install_wezterm
+      - install_terminal_tools
+
   wsl:
     include: [bash, neovim, user]
     actions:
-    - install_terminal_tools
+      - install_terminal_tools
+
   user:
     dotfiles:
-    - f_ensure_toolchains
-    - f_tools.toml
-    - f_install_tools
-    - d_agents_rules
+      - f_ensure_toolchains
+      - f_tools.toml
+      - f_install_tools
+      - f_init_profile
+      - d_agents_rules
     actions:
-    - ensure_toolchains
-    - install_user_tools
+      - ensure_toolchains
+      - install_user_tools
+
   gemini:
     dotfiles:
-    - f_link_agent_skills
+      - f_link_agent_skills
     actions:
-    - link_gemini_skills
+      - link_gemini_skills
+
   claude:
     dotfiles:
-    - f_link_agent_skills
+      - f_link_agent_skills
     actions:
-    - link_claude_skills
+      - link_claude_skills
+
+  wayland:
+    dotfiles:
+      - f_wezterm_wayland.lua
+
   bose:
     include: [bash, neovim]
     dotfiles:
-    - f_spitfire.sh
+      - f_spitfire.sh
+
   hotel-laptop.local:
     include: [wezterm, neovim, user, gemini, claude]
     dotfiles:
-    - f_most.sh
-    - f_0-mac.sh
-    - f_1-pyenv.sh
-    - f_2-direnv.sh
-    - f_vcpkg.sh
+      - f_most.sh
+      - f_0-mac.sh
+      - f_1-pyenv.sh
+      - f_2-direnv.sh
+      - f_vcpkg.sh
+
   hotel-laptop-2.local:
     include: [wezterm, neovim, user, gemini]
-  wayland:
-    dotfiles:
-    - f_wezterm_wayland.lua

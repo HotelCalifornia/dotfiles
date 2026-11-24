@@ -26,6 +26,7 @@ Features a declarative profile architecture, unified toolchain management via `u
     ├── local/share/nvim/site/
     └── scripts/
         ├── ensure-toolchains.sh
+        ├── init-profile.py
         ├── install-tools.py
         └── link-agent-skills.sh
 ```
@@ -43,6 +44,7 @@ Features a declarative profile architecture, unified toolchain management via `u
 | | `wezterm-mixins/` | Optional platform WezTerm mixins |
 | **`local/`** | `share/nvim/site/` | Vim-plug plugin manager |
 | **`scripts/`** | `ensure-toolchains.sh` | Bootstraps development toolchains |
+| | `init-profile.py` | Interactive host profile generator |
 | | `install-tools.py` | Multi-manager tool installer |
 | | `link-agent-skills.sh` | Symlinks agent configs across harnesses |
 
@@ -141,7 +143,7 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 
 ### 1. Initial Setup on a New Device
 
-Dotdrop automatically resolves its default profile to the machine's **hostname**. When provisioning a new machine:
+Dotdrop automatically resolves its default profile to the machine's **hostname**. To provision a new machine:
 
 ```bash
 # 1. Clone the repository
@@ -151,21 +153,17 @@ cd ~/dotfiles
 # 2. Install dotdrop (if not already installed)
 pip3 install --user dotdrop
 
-# 3. Check the device's hostname
-hostname
-# e.g., "new-workstation.local"
-
-# 4. Add a host profile to config.yaml matching $(hostname)
-# Compose it from the modular mixin profiles (e.g., wezterm, neovim, user, gemini):
-#
-# profiles:
-#   new-workstation.local:
-#     include: [wezterm, neovim, user, gemini]
-
-# 5. Install dotfiles and run bootstrap actions
-# Dotdrop automatically selects the profile matching your hostname:
-dotdrop install -a -f
+# 3. Interactively generate the host profile & install dotfiles
+./dotfiles/scripts/init-profile.py
 ```
+
+`init-profile.py` automatically:
+- Detects the machine's hostname (or accepts a custom override).
+- Prompts for common profile presets (e.g. macOS Workstation, WSL/Linux, Minimal) or custom mixin selection.
+- Safely writes the profile block into `config.yaml`.
+- Prompts to immediately run `dotdrop install -a -f` to apply dotfiles and bootstrap toolchains.
+
+Alternatively, you can manually add a profile matching `$(hostname)` to `config.yaml` and run `dotdrop install -a -f`.
 
 ### 2. Daily Workflow
 
