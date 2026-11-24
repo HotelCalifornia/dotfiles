@@ -19,11 +19,14 @@ STANDARD_MIXINS = [
     ("wezterm", "WezTerm GUI, completions, Pokemon-terminal, terminal-pane-display (includes bash)"),
     ("neovim", "Neovim editor environment, init.lua, plugins (nvim release)"),
     ("user", "Modern CLI tools (rg, bat, eza, dust, glow, termaid), rules & tools.toml"),
-    ("gemini", "Symlinks canonical agent skills & rules to ~/.gemini/config/"),
-    ("claude", "Symlinks canonical agent skills & rules to ~/.claude/"),
     ("bash", "Core shell & Powerline prompt (standalone; automatically included by wezterm)"),
     ("wsl", "WSL environment (includes bash, neovim, user; configures Windows Terminal)"),
     ("wayland", "Wayland display server mixin (wayland.lua)"),
+]
+
+AVAILABLE_AGENTS = [
+    ("gemini", "Antigravity / Gemini CLI", "Symlinks ~/.gemini/config/{skills,rules}"),
+    ("claude", "Claude Code", "Symlinks ~/.claude/{skills,rules}"),
 ]
 
 PRESETS = {
@@ -196,11 +199,40 @@ def prompt_custom_mixins():
     return [k for k in keys if k in selected]
 
 
+def prompt_ai_agents(current_selected=None):
+    keys = [item[0] for item in AVAILABLE_AGENTS]
+
+    print("\n\033[1;36mAI Tool Integrations\033[0m")
+    print("Select AI agents to configure with canonical rules & skills:")
+    for idx, (k, label, desc) in enumerate(AVAILABLE_AGENTS, 1):
+        print(f"  [{idx}] {label:<26} - {desc}")
+    print("  [a] All agents")
+    print("  [n] None / Skip [Default]")
+
+    choice = input("\nSelect agents to integrate (e.g. '1', '1, 2', 'a', or Enter to skip): ").strip()
+    if not choice or choice.lower() in ("n", "none", "skip"):
+        return []
+    if choice.lower() == "a":
+        return list(keys)
+
+    chosen = set()
+    parts = re.split(r"[\s,]+", choice)
+    for p in parts:
+        if p.isdigit():
+            val = int(p)
+            if 1 <= val <= len(keys):
+                chosen.add(keys[val - 1])
+        elif p.lower() in keys:
+            chosen.add(p.lower())
+    return [k for k in keys if k in chosen]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Interactively generate a host profile in config.yaml.")
     parser.add_argument("--hostname", help="Hostname for the profile (defaults to current system hostname).")
-    parser.add_argument("--include", help="Comma-separated mixin list (e.g. wezterm,neovim,user,gemini).")
+    parser.add_argument("--include", help="Comma-separated mixin list (e.g. wezterm,neovim,user).")
     parser.add_argument("--preset", choices=["1", "2", "3", "4"], help="Use a predefined preset (1-4).")
+    parser.add_argument("--agents", help="Comma-separated AI agents to integrate (e.g. 'gemini,claude', 'gemini', or 'none').")
     parser.add_argument("--mac-rc", action="store_true", help="Include macOS environment hooks (pyenv, direnv, etc.).")
     parser.add_argument("--config", help="Path to config.yaml.")
     parser.add_argument("--dry-run", action="store_true", help="Print YAML snippet without modifying config.yaml.")
@@ -274,10 +306,17 @@ def main():
             include_list = list(PRESETS["1"]["include"])
             suggest_mac_rc = True
 
-        if choice != "5" and "gemini" not in include_list:
-            resp = input("\nInclude Gemini / Antigravity agent skills & rules? [y/N]: ").strip().lower()
-            if resp in ("y", "yes"):
-                include_list.append("gemini")
+    # AI Agents selection step
+    selected_agents = []
+    if args.agents is not None:
+        if args.agents.lower() not in ("none", "no", "false", ""):
+            selected_agents = [x.strip() for x in args.agents.split(",") if x.strip()]
+    elif not args.non_interactive:
+        selected_agents = prompt_ai_agents()
+
+    for ag in selected_agents:
+        if ag not in include_list:
+            include_list.append(ag)
 
     # Extra dotfiles (e.g. macOS rc hooks)
     extra_dotfiles = []
