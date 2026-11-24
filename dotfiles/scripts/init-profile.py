@@ -176,19 +176,36 @@ def write_profile_to_config(config_path, hostname, include_list, extra_dotfiles=
 
 # --- Interactive TUI Prompts (using questionary if available) ---
 
+def safe_ask(prompt_obj):
+    if not prompt_obj:
+        return None
+    try:
+        return prompt_obj.ask()
+    except (EOFError, KeyboardInterrupt):
+        return None
+
+
 def ask_hostname(default_host):
     if questionary:
-        ans = questionary.text(
+        ans = safe_ask(questionary.text(
             "Device hostname for Dotdrop profile:",
             default=default_host,
-        ).ask()
+        ))
         if ans is None:
+            print("\nOperation cancelled.")
             sys.exit(0)
         return ans.strip() or default_host
     else:
-        resp = input(f"Detected hostname [\033[32m{default_host}\033[0m]. Use this name? [Y/n/custom]: ").strip()
+        try:
+            resp = input(f"Detected hostname [\033[32m{default_host}\033[0m]. Use this name? [Y/n/custom]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nOperation cancelled.")
+            sys.exit(0)
         if resp.lower() in ("n", "no"):
-            custom = input("Enter custom hostname: ").strip()
+            try:
+                custom = input("Enter custom hostname: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                sys.exit(0)
             return custom or default_host
         elif resp and resp.lower() not in ("y", "yes"):
             return resp
@@ -204,12 +221,13 @@ def ask_preset():
         choices.append(questionary.Choice("Custom (Start with empty checklist)", value="custom"))
 
         default_preset = "2" if "microsoft" in platform.uname().release.lower() else "1"
-        ans = questionary.select(
+        ans = safe_ask(questionary.select(
             "Select starting preset (populates capabilities checklist next):",
             choices=choices,
             default=default_preset,
-        ).ask()
+        ))
         if ans is None:
+            print("\nOperation cancelled.")
             sys.exit(0)
         return ans
     else:
@@ -217,7 +235,11 @@ def ask_preset():
         for k, p in PRESETS.items():
             print(f"  [{k}] {p['name']:<20} - {p['description']}")
         print("  [5] Custom (Start with empty checklist)")
-        return input("\nSelect preset [default: 1]: ").strip() or "1"
+        try:
+            return input("\nSelect preset [default: 1]: ").strip() or "1"
+        except (EOFError, KeyboardInterrupt):
+            print("\nOperation cancelled.")
+            sys.exit(0)
 
 
 def ask_mixins(preselected=None):
@@ -232,11 +254,12 @@ def ask_mixins(preselected=None):
             )
             for name, desc in STANDARD_MIXINS
         ]
-        ans = questionary.checkbox(
+        ans = safe_ask(questionary.checkbox(
             "Review & toggle capabilities (Space to toggle, Enter to confirm):",
             choices=choices,
-        ).ask()
+        ))
         if ans is None:
+            print("\nOperation cancelled.")
             sys.exit(0)
         return ans
     else:
@@ -249,7 +272,11 @@ def ask_mixins(preselected=None):
                 mark = "[x]" if k in selected else "[ ]"
                 print(f"  {mark} {idx}. {k:<10} - {desc}")
             print("\nEnter numbers to toggle, 'a' for all, or press Enter to confirm:")
-            choice = input("Toggle > ").strip()
+            try:
+                choice = input("Toggle > ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\nOperation cancelled.")
+                sys.exit(0)
             if not choice:
                 break
             if choice.lower() == "a":
@@ -277,11 +304,12 @@ def ask_ai_agents():
             )
             for key, label, desc in AVAILABLE_AGENTS
         ]
-        ans = questionary.checkbox(
+        ans = safe_ask(questionary.checkbox(
             "Select AI agent integrations (Space to toggle, Enter to confirm/skip):",
             choices=choices,
-        ).ask()
+        ))
         if ans is None:
+            print("\nOperation cancelled.")
             sys.exit(0)
         return ans
     else:
@@ -293,7 +321,11 @@ def ask_ai_agents():
         print("  [a] All agents")
         print("  [n] None / Skip [Default]")
 
-        choice = input("\nSelect agents to integrate (e.g. '1', '1, 2', 'a', or Enter to skip): ").strip()
+        try:
+            choice = input("\nSelect agents to integrate (e.g. '1', '1, 2', 'a', or Enter to skip): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nOperation cancelled.")
+            sys.exit(0)
         if not choice or choice.lower() in ("n", "none", "skip"):
             return []
         if choice.lower() == "a":
@@ -312,44 +344,47 @@ def ask_ai_agents():
 
 def ask_mac_hooks():
     if questionary:
-        ans = questionary.confirm(
+        ans = safe_ask(questionary.confirm(
             "Include macOS shell environment hooks (pyenv, direnv, vcpkg)?",
             default=False,
-        ).ask()
-        if ans is None:
-            sys.exit(0)
-        return ans
+        ))
+        return bool(ans)
     else:
-        resp = input("\nInclude macOS shell environment hooks (pyenv, direnv, vcpkg)? [y/N]: ").strip().lower()
-        return resp in ("y", "yes")
+        try:
+            resp = input("\nInclude macOS shell environment hooks (pyenv, direnv, vcpkg)? [y/N]: ").strip().lower()
+            return resp in ("y", "yes")
+        except (EOFError, KeyboardInterrupt):
+            return False
 
 
 def ask_write_confirm(hostname, config_path):
     if questionary:
-        ans = questionary.confirm(
+        ans = safe_ask(questionary.confirm(
             f"Write profile '{hostname}' to {config_path}?",
             default=True,
-        ).ask()
-        if ans is None:
-            sys.exit(0)
-        return ans
+        ))
+        return bool(ans)
     else:
-        confirm = input(f"\nWrite this profile to \033[34m{config_path}\033[0m? [Y/n]: ").strip().lower()
-        return confirm not in ("n", "no")
+        try:
+            confirm = input(f"\nWrite this profile to \033[34m{config_path}\033[0m? [Y/n]: ").strip().lower()
+            return confirm not in ("n", "no")
+        except (EOFError, KeyboardInterrupt):
+            return False
 
 
 def ask_run_install():
     if questionary:
-        ans = questionary.confirm(
+        ans = safe_ask(questionary.confirm(
             "Run 'dotdrop install -a -f' now to apply dotfiles?",
             default=True,
-        ).ask()
-        if ans is None:
-            return False
-        return ans
+        ))
+        return bool(ans)
     else:
-        run_now = input("\nRun 'dotdrop install -a -f' now to apply dotfiles? [Y/n]: ").strip().lower()
-        return run_now not in ("n", "no")
+        try:
+            run_now = input("\nRun 'dotdrop install -a -f' now to apply dotfiles? [Y/n]: ").strip().lower()
+            return run_now not in ("n", "no")
+        except (EOFError, KeyboardInterrupt):
+            return False
 
 
 def main():
@@ -365,6 +400,10 @@ def main():
     parser.add_argument("-f", "--force", action="store_true", help="Overwrite existing profile without prompting.")
     parser.add_argument("--non-interactive", action="store_true", help="Run without interactive prompts.")
     args = parser.parse_args()
+
+    if not sys.stdin.isatty():
+        # Non-TTY environment (e.g. redirected stdin, pipes, background tools)
+        args.non_interactive = True
 
     config_path = find_config_yaml(args.config)
     if not config_path:
@@ -384,12 +423,16 @@ def main():
             print("To overwrite, pass --force.", file=sys.stderr)
             sys.exit(1)
         if questionary:
-            overwrite = questionary.confirm(f"Overwrite / reconfigure profile '{hostname}'?", default=False).ask()
+            overwrite = safe_ask(questionary.confirm(f"Overwrite / reconfigure profile '{hostname}'?", default=False))
             if not overwrite:
                 print("Aborted.")
                 sys.exit(0)
         else:
-            resp = input("Overwrite / reconfigure this profile? [y/N]: ").strip().lower()
+            try:
+                resp = input("Overwrite / reconfigure this profile? [y/N]: ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("Aborted.")
+                sys.exit(0)
             if resp not in ("y", "yes"):
                 print("Aborted.")
                 sys.exit(0)
