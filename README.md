@@ -139,18 +139,32 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 
 ## Installation & Workflow
 
-### 1. Initial Setup on a New Machine
+### 1. Initial Setup on a New Device
+
+Dotdrop automatically resolves its default profile to the machine's **hostname**. When provisioning a new machine:
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone git@github.com:HotelCalifornia/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# Install dotdrop (if not already installed)
+# 2. Install dotdrop (if not already installed)
 pip3 install --user dotdrop
 
-# Install dotfiles and run bootstrap actions for your host profile
-dotdrop install -p hotel-laptop-2.local -f
+# 3. Check the device's hostname
+hostname
+# e.g., "new-workstation.local"
+
+# 4. Add a host profile to config.yaml matching $(hostname)
+# Compose it from the modular mixin profiles (e.g., wezterm, neovim, user, gemini):
+#
+# profiles:
+#   new-workstation.local:
+#     include: [wezterm, neovim, user, gemini]
+
+# 5. Install dotfiles and run bootstrap actions
+# Dotdrop automatically selects the profile matching your hostname:
+dotdrop install -a -f
 ```
 
 ### 2. Daily Workflow
