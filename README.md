@@ -15,19 +15,19 @@ Features a declarative profile architecture, unified toolchain management via `u
 │   ├── bash_aliases                # Shell aliases
 │   ├── config/
 │   │   ├── agents/                 # Canonical cross-harness AI agent configs
-│   │   │   ├── rules/              # Modular agent rules (preferred-tools.md)
-│   │   │   └── skills/             # Agent skills (terminal-pane-display)
+│   │   │   ├── rules/              # Modular agent rules
+│   │   │   └── skills/             # Open agent skills
 │   │   ├── nvim/                   # Neovim configuration & plugins
 │   │   ├── powerline/              # Powerline prompt themes & configuration
-│   │   ├── rc/                     # Modular shell rc scripts (.wezterm-completion, vcpkg, mac)
+│   │   ├── rc/                     # Modular shell rc scripts
 │   │   ├── tools.toml              # Declarative manifest for CLI/GUI tools
 │   │   ├── wezterm/                # WezTerm configuration with dynamic mixin loader
-│   │   └── wezterm-mixins/         # Optional WezTerm mixins (e.g. wayland)
+│   │   └── wezterm-mixins/         # Optional platform WezTerm mixins
 │   ├── local/share/nvim/site/      # Vim-plug manager
 │   └── scripts/
-│       ├── ensure-toolchains.sh    # Bootstraps uv & rustup/cargo non-interactively
-│       ├── install-tools.py        # Multi-manager tool installer (uv, cargo, releases)
-│       └── link-agent-skills.sh    # Symlinks canonical agent skills to Gemini & Claude
+│       ├── ensure-toolchains.sh    # Bootstraps development toolchains
+│       ├── install-tools.py        # Multi-manager tool installer
+│       └── link-agent-skills.sh    # Symlinks agent configs across harnesses
 ```
 
 ---
@@ -95,7 +95,7 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 ```text
 ~/.config/agents/
 ├── rules/
-│   └── preferred-tools.md      # Enforces modern CLI tool preferences (rg, bat, eza, etc.)
+│   └── preferred-tools.md      # Enforces modern CLI tool preferences
 └── skills/
     └── terminal-pane-display/
         ├── SKILL.md
