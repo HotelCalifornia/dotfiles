@@ -77,29 +77,60 @@ actions:
 profiles:
   bash:
     dotfiles:
+    - d_powerline
+    - f_bash_aliases
+    - f_ensure_toolchains
+    - f_tools.toml
+    - f_install_tools
+    actions:
+    - ensure_toolchains
+    - install_shell_tools
+  neovim:
+    dotfiles:
     - d_nvim
     - f_plug.vim
-    - d_powerline
     - f_init.lua
-    - f_bash_aliases
+    - f_ensure_toolchains
+    - f_tools.toml
+    - f_install_tools
+    actions:
+    - ensure_toolchains
+    - install_neovim_tools
   wezterm:
     include: [bash]
     dotfiles:
     - d_wezterm
     - f_wezterm.sh
     - f_wezterm-completion
+    actions:
+    - install_wezterm
+    - install_terminal_tools
+  wsl:
+    include: [bash, neovim, user]
+    actions:
+    - install_terminal_tools
+  user:
+    dotfiles:
+    - f_ensure_toolchains
+    - f_tools.toml
+    - f_install_tools
+    actions:
+    - ensure_toolchains
+    - install_user_tools
   bose:
-    include: [bash]
+    include: [bash, neovim]
     dotfiles:
     - f_spitfire.sh
   hotel-laptop.local:
-    include: [wezterm]
+    include: [wezterm, neovim, user]
     dotfiles:
     - f_most.sh
     - f_0-mac.sh
     - f_1-pyenv.sh
     - f_2-direnv.sh
     - f_vcpkg.sh
+  hotel-laptop-2.local:
+    include: [wezterm, neovim, user]
   wayland:
     dotfiles:
     - f_wezterm_wayland.lua
