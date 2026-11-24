@@ -56,6 +56,24 @@ dotfiles:
   f_wezterm_wayland.lua:
     src: config/wezterm-mixins/wayland.lua
     dst: ~/.config/wezterm/mixins/wayland.lua
+  f_ensure_toolchains:
+    src: scripts/ensure-toolchains.sh
+    dst: ~/.local/bin/ensure-toolchains.sh
+    chmod: '755'
+  f_tools.toml:
+    src: config/uv/tools.toml
+    dst: ~/.config/uv/tools.toml
+  f_install_tools:
+    src: scripts/install-tools.py
+    dst: ~/.local/bin/install-tools.py
+    chmod: '755'
+actions:
+  ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
+  install_shell_tools: ~/.local/bin/install-tools.py --group shell
+  install_neovim_tools: ~/.local/bin/install-tools.py --group neovim
+  install_wezterm: ~/.local/bin/install-tools.py --group wezterm
+  install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
+  install_user_tools: ~/.local/bin/install-tools.py --group user
 profiles:
   bash:
     dotfiles:

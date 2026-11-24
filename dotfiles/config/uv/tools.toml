@@ -1,0 +1,77 @@
+# Declarative manifest for CLI tools managed via uv, cargo, and github-release.
+# Consumed by install-tools.py during dotdrop execution.
+# Tools can be scoped to specific profiles using the `group` (or `groups`) attribute.
+
+# --- Shell / Prompt Dependencies ---
+[tools.powerline-status]
+manager = "uv"
+group = "shell"
+
+# --- Terminal Emulator Dependencies ---
+[tools.wezterm]
+manager = "github-release"
+group = "wezterm"
+command = "wezterm"
+repo = "wezterm/wezterm"
+asset = "WezTerm-.*\\.AppImage$"
+brew_cask = "wezterm"
+app_bundle = "/Applications/WezTerm.app"
+skip_wsl = true
+desktop_entry = true
+desktop_name = "WezTerm"
+desktop_comment = "Wez's Terminal Emulator"
+desktop_categories = "System;TerminalEmulator;Utility;"
+icon_name = "wezterm"
+
+# --- Terminal Theming & Tools (works with WezTerm and Windows Terminal in WSL) ---
+[tools.pokemon-terminal]
+manager = "uv"
+group = "terminal"
+command = "pokemon"
+fork = "git+https://github.com/HotelCalifornia/Pokemon-Terminal.git"
+local_paths = [
+    "~/Developer/Pokemon-Terminal",
+    "~/src/Pokemon-Terminal",
+    "~/.local/src/Pokemon-Terminal",
+]
+
+# --- Editor Dependencies ---
+[tools.neovim]
+manager = "github-release"
+group = "neovim"
+command = "nvim"
+repo = "neovim/neovim"
+asset = "nvim-linux-{arch}.appimage$"
+brew = "neovim"
+desktop_entry = true
+desktop_name = "Neovim"
+desktop_comment = "Vim-fork focused on extensibility and usability"
+desktop_terminal = true
+desktop_categories = "Utility;TextEditor;Development;"
+icon_name = "nvim"
+
+# --- General CLI Utilities (Cargo, UV, GitHub Release) ---
+[tools.du-dust]
+manager = "cargo"
+group = "user"
+command = "dust"
+
+[tools.eza]
+manager = "cargo"
+group = "user"
+
+[tools.bat]
+manager = "cargo"
+group = "user"
+
+[tools.glow]
+manager = "github-release"
+group = "user"
+command = "glow"
+repo = "charmbracelet/glow"
+asset = "glow_.*_Linux_{arch}\\.tar\\.gz$"
+brew = "glow"
+
+[tools.termaid]
+manager = "uv"
+group = "user"
