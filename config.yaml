@@ -35,6 +35,9 @@ dotfiles:
   f_most.sh:
     src: config/rc/most.sh
     dst: ~/.config/rc/most.sh
+  f_vcpkg.sh:
+    src: config/rc/vcpkg.sh
+    dst: ~/.config/rc/vcpkg.sh
   f_wezterm.sh:
     src: config/rc/wezterm.sh
     dst: ~/.config/rc/wezterm.sh
@@ -47,6 +50,9 @@ dotfiles:
   f_2-direnv.sh:
     src: config/rc/pre/2-direnv.sh
     dst: ~/.config/rc/pre/2-direnv.sh
+  f_wezterm-completion:
+    src: config/rc/.wezterm-completion
+    dst: ~/.config/rc/.wezterm-completion
 profiles:
   bash:
     dotfiles:
@@ -60,6 +66,7 @@ profiles:
     dotfiles:
     - d_wezterm
     - f_wezterm.sh
+    - f_wezterm-completion
   bose:
     include: [bash]
     dotfiles:
@@ -71,3 +78,4 @@ profiles:
     - f_0-mac.sh
     - f_1-pyenv.sh
     - f_2-direnv.sh
+    - f_vcpkg.sh
