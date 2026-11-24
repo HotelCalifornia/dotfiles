@@ -201,55 +201,54 @@ def ask_preset():
             questionary.Choice(f"{p['name']:<18} ({p['description']})", value=k)
             for k, p in PRESETS.items()
         ]
-        choices.append(questionary.Choice("Custom mixin selection...", value="5"))
+        choices.append(questionary.Choice("Custom (Start with empty checklist)", value="custom"))
 
+        default_preset = "2" if "microsoft" in platform.uname().release.lower() else "1"
         ans = questionary.select(
-            "Select base profile preset:",
+            "Select starting preset (populates capabilities checklist next):",
             choices=choices,
-            default="1",
+            default=default_preset,
         ).ask()
         if ans is None:
             sys.exit(0)
         return ans
     else:
-        print("\nChoose a profile preset:")
+        print("\nChoose starting preset:")
         for k, p in PRESETS.items():
-            print(f"  [{k}] {p['name']:<25} - {p['description']}")
-        print("  [5] Custom mixin selection...")
+            print(f"  [{k}] {p['name']:<20} - {p['description']}")
+        print("  [5] Custom (Start with empty checklist)")
         return input("\nSelect preset [default: 1]: ").strip() or "1"
 
 
-def ask_custom_mixins():
-    default_selected = ["wezterm", "neovim", "user"]
-    if "microsoft" in platform.uname().release.lower():
-        default_selected = ["wsl", "neovim", "user"]
+def ask_mixins(preselected=None):
+    selected_set = set(preselected or [])
 
     if questionary:
         choices = [
             questionary.Choice(
                 title=f"{name:<10} - {desc}",
                 value=name,
-                checked=(name in default_selected),
+                checked=(name in selected_set),
             )
             for name, desc in STANDARD_MIXINS
         ]
         ans = questionary.checkbox(
-            "Select mixins to include (Space to toggle, Enter to confirm):",
+            "Review & toggle capabilities (Space to toggle, Enter to confirm):",
             choices=choices,
         ).ask()
         if ans is None:
             sys.exit(0)
         return ans
     else:
-        print("\nSelect mixins to include (toggle numbers separated by spaces or commas):")
-        selected = set(default_selected)
+        print("\nReview capabilities (toggle numbers separated by spaces or commas):")
+        selected = set(selected_set)
         keys = [item[0] for item in STANDARD_MIXINS]
         while True:
             print()
             for idx, (k, desc) in enumerate(STANDARD_MIXINS, 1):
                 mark = "[x]" if k in selected else "[ ]"
                 print(f"  {mark} {idx}. {k:<10} - {desc}")
-            print("\nEnter numbers to toggle, 'a' for all, or press Enter when done:")
+            print("\nEnter numbers to toggle, 'a' for all, or press Enter to confirm:")
             choice = input("Toggle > ").strip()
             if not choice:
                 break
@@ -413,13 +412,14 @@ def main():
     else:
         choice = ask_preset()
         if choice in PRESETS:
-            include_list = list(PRESETS[choice]["include"])
+            initial_mixins = list(PRESETS[choice]["include"])
             suggest_mac_rc = PRESETS[choice].get("suggest_mac_rc", False)
-        elif choice == "5":
-            include_list = ask_custom_mixins()
         else:
-            include_list = list(PRESETS["1"]["include"])
+            initial_mixins = []
             suggest_mac_rc = True
+
+        # Pre-populate capabilities checklist from the selected preset:
+        include_list = ask_mixins(initial_mixins)
 
     # AI Agents selection step
     selected_agents = []

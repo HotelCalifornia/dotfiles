@@ -163,7 +163,7 @@ uv tool install dotdrop
 `init-profile.py` uses PEP 723 inline script metadata to run an interactive terminal wizard via `uv run` (powered by `questionary`):
 - **Keyboard Navigation**: Use <kbd>↑</kbd>/<kbd>↓</kbd> arrows to navigate, <kbd>Space</kbd> to toggle checkboxes, and <kbd>Enter</kbd> to confirm.
 - **Hostname Auto-Detection**: Queries `$(hostname)` with optional custom override.
-- **Preset Selection**: Quick presets (`Workstation`, `WSL Workstation`, `Headless`, `Minimal Shell`) or full custom mixin checkboxes.
+- **Preset Selection & Pre-population**: Choose a starting preset (`Workstation`, `WSL Workstation`, `Headless`, `Minimal Shell`, or Custom), which automatically pre-populates the capabilities checklist for easy granular tweaking before proceeding.
 - **AI Tool Integration**: Multi-select prompt for AI agents (`Antigravity`, `Claude Code`, or skip).
 - **Automated Bootstrap**: Writes the profile block into `config.yaml` and offers to execute `dotdrop install -a -f`.
 
