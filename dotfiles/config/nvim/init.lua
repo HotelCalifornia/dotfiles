@@ -115,18 +115,35 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
     end
 })
 
--- close neovim if
---  - there are two open buffers, and they are both nvimtree and a terminal
---  - there is one open buffer, and it is nvimtree
-vim.api.nvim_create_autocmd("BufEnter", {
-    nested = true,
+-- close neovim if only nvim-tree and/or terminal remain when quitting
+vim.api.nvim_create_autocmd("QuitPre", {
     callback = function()
-        nvimtree = find_win('NvimTree_')
-        terminal = find_win('term://')
-        if (#vim.api.nvim_list_wins() == 2 and (nvimtree ~= nil and terminal ~= nil))
-            or (#vim.api.nvim_list_wins() == 1 and nvimtree ~= nil)
-        then
-             vim.cmd 'quit'
+        local cur_win = vim.api.nvim_get_current_win()
+        local wins = vim.api.nvim_list_wins()
+        local tree_win = find_win('NvimTree_')
+        local term_win = find_win('term://')
+
+        local remaining_wins = {}
+        for _, w in ipairs(wins) do
+            if w ~= cur_win then
+                table.insert(remaining_wins, w)
+            end
+        end
+
+        local only_helpers_left = #remaining_wins > 0
+        for _, w in ipairs(remaining_wins) do
+            if w ~= tree_win and w ~= term_win then
+                only_helpers_left = false
+                break
+            end
+        end
+
+        if only_helpers_left then
+            for _, w in ipairs(remaining_wins) do
+                if vim.api.nvim_win_is_valid(w) then
+                    vim.api.nvim_win_close(w, true)
+                end
+            end
         end
     end
 })
