@@ -1,19 +1,35 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "questionary>=2.0.0",
+# ]
+# ///
 """
 Interactive host profile generator for Dotdrop.
 
 Detects the current device hostname, prompts for desired profile mixins
-(or common presets), and writes the host profile into config.yaml so that
-subsequent `dotdrop install` commands automatically resolve to this device.
+and AI agent integrations via a streamlined TUI (powered by questionary & uv),
+and updates config.yaml so that subsequent `dotdrop install` commands
+automatically resolve to this device.
 """
 
 import argparse
 import os
 import platform
 import re
+import shutil
 import socket
 import subprocess
 import sys
+
+# Try importing questionary, or re-exec with uv if run under raw python3
+try:
+    import questionary
+except ImportError:
+    if shutil.which("uv"):
+        os.execvp("uv", ["uv", "run", "--script", sys.argv[0]] + sys.argv[1:])
+    questionary = None
 
 STANDARD_MIXINS = [
     ("wezterm", "WezTerm GUI, completions, Pokemon-terminal, terminal-pane-display (includes bash)"),
@@ -94,10 +110,6 @@ def get_default_hostname():
 
 
 def read_config_profiles(config_path):
-    """
-    Parses existing profile names and their lines from config.yaml.
-    Returns (profiles_dict, full_lines)
-    """
     with open(config_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
@@ -112,7 +124,6 @@ def read_config_profiles(config_path):
             continue
 
         if in_profiles:
-            # Check for another top-level key (0 indentation)
             if line and not line.startswith(" ") and not line.startswith("\t") and not line.startswith("#") and ":" in line:
                 if current_profile is not None:
                     profiles[current_profile] = (start_line, i)
@@ -135,7 +146,6 @@ def read_config_profiles(config_path):
 def write_profile_to_config(config_path, hostname, include_list, extra_dotfiles=None):
     profiles, lines = read_config_profiles(config_path)
 
-    # Format YAML block for the profile
     block_lines = [f"  {hostname}:\n"]
     if include_list:
         inc_str = ", ".join(include_list)
@@ -149,7 +159,6 @@ def write_profile_to_config(config_path, hostname, include_list, extra_dotfiles=
         start_idx, end_idx = profiles[hostname]
         new_lines = lines[:start_idx] + block_lines + lines[end_idx:]
     else:
-        # Append before next section or at end of profiles
         in_profiles = False
         insert_idx = len(lines)
         for i, line in enumerate(lines):
@@ -165,66 +174,183 @@ def write_profile_to_config(config_path, hostname, include_list, extra_dotfiles=
         f.writelines(new_lines)
 
 
-def prompt_custom_mixins():
-    print("\nSelect mixins to include (toggle numbers separated by spaces or commas):")
-    selected = set(["wezterm", "neovim", "user"])
+# --- Interactive TUI Prompts (using questionary if available) ---
+
+def ask_hostname(default_host):
+    if questionary:
+        ans = questionary.text(
+            "Device hostname for Dotdrop profile:",
+            default=default_host,
+        ).ask()
+        if ans is None:
+            sys.exit(0)
+        return ans.strip() or default_host
+    else:
+        resp = input(f"Detected hostname [\033[32m{default_host}\033[0m]. Use this name? [Y/n/custom]: ").strip()
+        if resp.lower() in ("n", "no"):
+            custom = input("Enter custom hostname: ").strip()
+            return custom or default_host
+        elif resp and resp.lower() not in ("y", "yes"):
+            return resp
+        return default_host
+
+
+def ask_preset():
+    if questionary:
+        choices = [
+            questionary.Choice(f"{p['name']:<18} ({p['description']})", value=k)
+            for k, p in PRESETS.items()
+        ]
+        choices.append(questionary.Choice("Custom mixin selection...", value="5"))
+
+        ans = questionary.select(
+            "Select base profile preset:",
+            choices=choices,
+            default="1",
+        ).ask()
+        if ans is None:
+            sys.exit(0)
+        return ans
+    else:
+        print("\nChoose a profile preset:")
+        for k, p in PRESETS.items():
+            print(f"  [{k}] {p['name']:<25} - {p['description']}")
+        print("  [5] Custom mixin selection...")
+        return input("\nSelect preset [default: 1]: ").strip() or "1"
+
+
+def ask_custom_mixins():
+    default_selected = ["wezterm", "neovim", "user"]
     if "microsoft" in platform.uname().release.lower():
-        selected.discard("wezterm")
-        selected.add("wsl")
+        default_selected = ["wsl", "neovim", "user"]
 
-    keys = [item[0] for item in STANDARD_MIXINS]
+    if questionary:
+        choices = [
+            questionary.Choice(
+                title=f"{name:<10} - {desc}",
+                value=name,
+                checked=(name in default_selected),
+            )
+            for name, desc in STANDARD_MIXINS
+        ]
+        ans = questionary.checkbox(
+            "Select mixins to include (Space to toggle, Enter to confirm):",
+            choices=choices,
+        ).ask()
+        if ans is None:
+            sys.exit(0)
+        return ans
+    else:
+        print("\nSelect mixins to include (toggle numbers separated by spaces or commas):")
+        selected = set(default_selected)
+        keys = [item[0] for item in STANDARD_MIXINS]
+        while True:
+            print()
+            for idx, (k, desc) in enumerate(STANDARD_MIXINS, 1):
+                mark = "[x]" if k in selected else "[ ]"
+                print(f"  {mark} {idx}. {k:<10} - {desc}")
+            print("\nEnter numbers to toggle, 'a' for all, or press Enter when done:")
+            choice = input("Toggle > ").strip()
+            if not choice:
+                break
+            if choice.lower() == "a":
+                selected = set(keys)
+                continue
+            for p in re.split(r"[\s,]+", choice):
+                if p.isdigit():
+                    val = int(p)
+                    if 1 <= val <= len(keys):
+                        target = keys[val - 1]
+                        if target in selected:
+                            selected.remove(target)
+                        else:
+                            selected.add(target)
+        return [k for k in keys if k in selected]
 
-    while True:
-        print()
-        for idx, (k, desc) in enumerate(STANDARD_MIXINS, 1):
-            mark = "[x]" if k in selected else "[ ]"
-            print(f"  {mark} {idx}. {k:<10} - {desc}")
-        print("\nEnter numbers to toggle, 'a' for all, or press Enter when done:")
-        choice = input("Toggle > ").strip()
-        if not choice:
-            break
+
+def ask_ai_agents():
+    if questionary:
+        choices = [
+            questionary.Choice(
+                title=f"{label:<26} - {desc}",
+                value=key,
+                checked=False,  # Unchecked by default
+            )
+            for key, label, desc in AVAILABLE_AGENTS
+        ]
+        ans = questionary.checkbox(
+            "Select AI agent integrations (Space to toggle, Enter to confirm/skip):",
+            choices=choices,
+        ).ask()
+        if ans is None:
+            sys.exit(0)
+        return ans
+    else:
+        keys = [item[0] for item in AVAILABLE_AGENTS]
+        print("\n\033[1;36mAI Tool Integrations\033[0m")
+        print("Select AI agents to configure with canonical rules & skills:")
+        for idx, (k, label, desc) in enumerate(AVAILABLE_AGENTS, 1):
+            print(f"  [{idx}] {label:<26} - {desc}")
+        print("  [a] All agents")
+        print("  [n] None / Skip [Default]")
+
+        choice = input("\nSelect agents to integrate (e.g. '1', '1, 2', 'a', or Enter to skip): ").strip()
+        if not choice or choice.lower() in ("n", "none", "skip"):
+            return []
         if choice.lower() == "a":
-            selected = set(keys)
-            continue
-        parts = re.split(r"[\s,]+", choice)
-        for p in parts:
+            return list(keys)
+
+        chosen = set()
+        for p in re.split(r"[\s,]+", choice):
             if p.isdigit():
                 val = int(p)
                 if 1 <= val <= len(keys):
-                    target = keys[val - 1]
-                    if target in selected:
-                        selected.remove(target)
-                    else:
-                        selected.add(target)
-    return [k for k in keys if k in selected]
+                    chosen.add(keys[val - 1])
+            elif p.lower() in keys:
+                chosen.add(p.lower())
+        return [k for k in keys if k in chosen]
 
 
-def prompt_ai_agents(current_selected=None):
-    keys = [item[0] for item in AVAILABLE_AGENTS]
+def ask_mac_hooks():
+    if questionary:
+        ans = questionary.confirm(
+            "Include macOS shell environment hooks (pyenv, direnv, vcpkg)?",
+            default=False,
+        ).ask()
+        if ans is None:
+            sys.exit(0)
+        return ans
+    else:
+        resp = input("\nInclude macOS shell environment hooks (pyenv, direnv, vcpkg)? [y/N]: ").strip().lower()
+        return resp in ("y", "yes")
 
-    print("\n\033[1;36mAI Tool Integrations\033[0m")
-    print("Select AI agents to configure with canonical rules & skills:")
-    for idx, (k, label, desc) in enumerate(AVAILABLE_AGENTS, 1):
-        print(f"  [{idx}] {label:<26} - {desc}")
-    print("  [a] All agents")
-    print("  [n] None / Skip [Default]")
 
-    choice = input("\nSelect agents to integrate (e.g. '1', '1, 2', 'a', or Enter to skip): ").strip()
-    if not choice or choice.lower() in ("n", "none", "skip"):
-        return []
-    if choice.lower() == "a":
-        return list(keys)
+def ask_write_confirm(hostname, config_path):
+    if questionary:
+        ans = questionary.confirm(
+            f"Write profile '{hostname}' to {config_path}?",
+            default=True,
+        ).ask()
+        if ans is None:
+            sys.exit(0)
+        return ans
+    else:
+        confirm = input(f"\nWrite this profile to \033[34m{config_path}\033[0m? [Y/n]: ").strip().lower()
+        return confirm not in ("n", "no")
 
-    chosen = set()
-    parts = re.split(r"[\s,]+", choice)
-    for p in parts:
-        if p.isdigit():
-            val = int(p)
-            if 1 <= val <= len(keys):
-                chosen.add(keys[val - 1])
-        elif p.lower() in keys:
-            chosen.add(p.lower())
-    return [k for k in keys if k in chosen]
+
+def ask_run_install():
+    if questionary:
+        ans = questionary.confirm(
+            "Run 'dotdrop install -a -f' now to apply dotfiles?",
+            default=True,
+        ).ask()
+        if ans is None:
+            return False
+        return ans
+    else:
+        run_now = input("\nRun 'dotdrop install -a -f' now to apply dotfiles? [Y/n]: ").strip().lower()
+        return run_now not in ("n", "no")
 
 
 def main():
@@ -250,17 +376,7 @@ def main():
     print(f"Configuration: \033[34m{config_path}\033[0m\n")
 
     default_host = get_default_hostname()
-    hostname = args.hostname or default_host
-
-    if not args.non_interactive and not args.hostname:
-        resp = input(f"Detected hostname [\033[32m{default_host}\033[0m]. Use this name? [Y/n/custom]: ").strip()
-        if resp.lower() in ("n", "no") or (resp and resp.lower() not in ("y", "yes")):
-            if resp.lower() in ("n", "no"):
-                custom = input("Enter custom hostname: ").strip()
-                if custom:
-                    hostname = custom
-            else:
-                hostname = resp
+    hostname = args.hostname or (ask_hostname(default_host) if not args.non_interactive else default_host)
 
     profiles, _ = read_config_profiles(config_path)
     if hostname in profiles and not args.force:
@@ -268,12 +384,18 @@ def main():
         if args.non_interactive:
             print("To overwrite, pass --force.", file=sys.stderr)
             sys.exit(1)
-        resp = input("Overwrite / reconfigure this profile? [y/N]: ").strip().lower()
-        if resp not in ("y", "yes"):
-            print("Aborted.")
-            sys.exit(0)
+        if questionary:
+            overwrite = questionary.confirm(f"Overwrite / reconfigure profile '{hostname}'?", default=False).ask()
+            if not overwrite:
+                print("Aborted.")
+                sys.exit(0)
+        else:
+            resp = input("Overwrite / reconfigure this profile? [y/N]: ").strip().lower()
+            if resp not in ("y", "yes"):
+                print("Aborted.")
+                sys.exit(0)
 
-    # Determine mixins
+    # Base mixin selection
     include_list = []
     suggest_mac_rc = False
 
@@ -284,25 +406,18 @@ def main():
         include_list = list(preset["include"])
         suggest_mac_rc = preset.get("suggest_mac_rc", False)
     elif args.non_interactive:
-        # Default non-interactive preset: Workstation (or WSL Workstation on WSL)
         is_wsl = "microsoft" in platform.uname().release.lower()
         preset = PRESETS["2"] if is_wsl else PRESETS["1"]
         include_list = list(preset["include"])
         suggest_mac_rc = preset.get("suggest_mac_rc", False)
     else:
-        print("\nChoose a profile preset:")
-        for k, p in PRESETS.items():
-            print(f"  [{k}] {p['name']:<25} - {p['description']}")
-        print("  [5] Custom mixin selection...")
-
-        choice = input("\nSelect preset [default: 1]: ").strip() or "1"
+        choice = ask_preset()
         if choice in PRESETS:
             include_list = list(PRESETS[choice]["include"])
             suggest_mac_rc = PRESETS[choice].get("suggest_mac_rc", False)
         elif choice == "5":
-            include_list = prompt_custom_mixins()
+            include_list = ask_custom_mixins()
         else:
-            print("Invalid choice, defaulting to preset 1.")
             include_list = list(PRESETS["1"]["include"])
             suggest_mac_rc = True
 
@@ -312,7 +427,7 @@ def main():
         if args.agents.lower() not in ("none", "no", "false", ""):
             selected_agents = [x.strip() for x in args.agents.split(",") if x.strip()]
     elif not args.non_interactive:
-        selected_agents = prompt_ai_agents()
+        selected_agents = ask_ai_agents()
 
     for ag in selected_agents:
         if ag not in include_list:
@@ -323,8 +438,7 @@ def main():
     if args.mac_rc:
         extra_dotfiles = list(MAC_RC_DOTFILES)
     elif not args.non_interactive and platform.system() == "Darwin" and suggest_mac_rc:
-        resp = input("\nInclude macOS shell environment hooks (pyenv, direnv, vcpkg)? [y/N]: ").strip().lower()
-        if resp in ("y", "yes"):
+        if ask_mac_hooks():
             extra_dotfiles = list(MAC_RC_DOTFILES)
 
     # Display preview
@@ -335,15 +449,14 @@ def main():
     if extra_dotfiles:
         print("    dotfiles:")
         for df in extra_dotfiles:
-            print(f"    - {df}")
+            print(f"      - {df}")
 
     if args.dry_run:
         print("\n[--dry-run specified; config.yaml not modified]")
         sys.exit(0)
 
     if not args.non_interactive:
-        confirm = input(f"\nWrite this profile to \033[34m{config_path}\033[0m? [Y/n]: ").strip().lower()
-        if confirm in ("n", "no"):
+        if not ask_write_confirm(hostname, config_path):
             print("Aborted.")
             sys.exit(0)
 
@@ -353,9 +466,7 @@ def main():
     # Ask to install
     do_install = args.install
     if not do_install and not args.non_interactive:
-        run_now = input("\nRun 'dotdrop install -a -f' now to apply dotfiles? [Y/n]: ").strip().lower()
-        if run_now not in ("n", "no"):
-            do_install = True
+        do_install = ask_run_install()
 
     if do_install:
         print("\n\033[36mRunning dotdrop install -a -f...\033[0m\n")

@@ -150,18 +150,22 @@ Dotdrop automatically resolves its default profile to the machine's **hostname**
 git clone git@github.com:HotelCalifornia/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# 2. Install dotdrop (if not already installed)
-pip3 install --user dotdrop
+# 2. Bootstrap uv & development toolchains
+./dotfiles/scripts/ensure-toolchains.sh
 
-# 3. Interactively generate the host profile & install dotfiles
+# 3. Install dotdrop via uv tool
+uv tool install dotdrop
+
+# 4. Interactively generate the host profile & install dotfiles
 ./dotfiles/scripts/init-profile.py
 ```
 
-`init-profile.py` automatically:
-- Detects the machine's hostname (or accepts a custom override).
-- Prompts for common profile presets (e.g. Workstation, WSL Workstation, Minimal Shell) or custom mixin selection.
-- Safely writes the profile block into `config.yaml`.
-- Prompts to immediately run `dotdrop install -a -f` to apply dotfiles and bootstrap toolchains.
+`init-profile.py` uses PEP 723 inline script metadata to run an interactive terminal wizard via `uv run` (powered by `questionary`):
+- **Keyboard Navigation**: Use <kbd>↑</kbd>/<kbd>↓</kbd> arrows to navigate, <kbd>Space</kbd> to toggle checkboxes, and <kbd>Enter</kbd> to confirm.
+- **Hostname Auto-Detection**: Queries `$(hostname)` with optional custom override.
+- **Preset Selection**: Quick presets (`Workstation`, `WSL Workstation`, `Headless`, `Minimal Shell`) or full custom mixin checkboxes.
+- **AI Tool Integration**: Multi-select prompt for AI agents (`Antigravity`, `Claude Code`, or skip).
+- **Automated Bootstrap**: Writes the profile block into `config.yaml` and offers to execute `dotdrop install -a -f`.
 
 Alternatively, you can manually add a profile matching `$(hostname)` to `config.yaml` and run `dotdrop install -a -f`.
 
