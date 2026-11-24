@@ -27,9 +27,6 @@ case "$AGENT" in
   claude)
     link_path "$SKILLS_SRC" "${HOME}/.claude/skills"
     link_path "$RULES_SRC" "${HOME}/.claude/rules"
-    if [[ -f "${RULES_SRC}/preferred-tools.md" ]]; then
-      link_path "${RULES_SRC}/preferred-tools.md" "${HOME}/.claude/CLAUDE.md"
-    fi
     ;;
   *)
     echo "Usage: $0 {gemini|claude}" >&2

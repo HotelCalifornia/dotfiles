@@ -111,8 +111,7 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
   - **Claude Code**:
     - `~/.claude/skills` $\rightarrow$ `~/.config/agents/skills`
     - `~/.claude/rules` $\rightarrow$ `~/.config/agents/rules`
-    - `~/.claude/CLAUDE.md` $\rightarrow$ `~/.config/agents/rules/preferred-tools.md`
-- Skills and rules authored once under `.config/agents/` are automatically discovered and enforced by both Antigravity and Claude Code.
+- Skills and rules authored once under `.config/agents/` are automatically discovered and enforced by both Antigravity and Claude Code. Claude Code supports `.claude/rules/` directly and adheres to `AGENTS.md` standards.
 
 ---
 
