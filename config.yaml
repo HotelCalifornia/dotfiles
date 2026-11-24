@@ -67,6 +67,13 @@ dotfiles:
     src: scripts/install-tools.py
     dst: ~/.local/bin/install-tools.py
     chmod: '755'
+  d_skill_terminal_pane_display:
+    src: config/agents/skills/terminal-pane-display
+    dst: ~/.config/agents/skills/terminal-pane-display
+  f_link_agent_skills:
+    src: scripts/link-agent-skills.sh
+    dst: ~/.local/bin/link-agent-skills.sh
+    chmod: '755'
 actions:
   ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
@@ -74,6 +81,8 @@ actions:
   install_wezterm: ~/.local/bin/install-tools.py --group wezterm
   install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
   install_user_tools: ~/.local/bin/install-tools.py --group user
+  link_gemini_skills: ~/.local/bin/link-agent-skills.sh gemini
+  link_claude_skills: ~/.local/bin/link-agent-skills.sh claude
 profiles:
   bash:
     dotfiles:
@@ -102,6 +111,7 @@ profiles:
     - d_wezterm
     - f_wezterm.sh
     - f_wezterm-completion
+    - d_skill_terminal_pane_display
     actions:
     - install_wezterm
     - install_terminal_tools
@@ -117,12 +127,22 @@ profiles:
     actions:
     - ensure_toolchains
     - install_user_tools
+  gemini:
+    dotfiles:
+    - f_link_agent_skills
+    actions:
+    - link_gemini_skills
+  claude:
+    dotfiles:
+    - f_link_agent_skills
+    actions:
+    - link_claude_skills
   bose:
     include: [bash, neovim]
     dotfiles:
     - f_spitfire.sh
   hotel-laptop.local:
-    include: [wezterm, neovim, user]
+    include: [wezterm, neovim, user, gemini, claude]
     dotfiles:
     - f_most.sh
     - f_0-mac.sh
@@ -130,7 +150,7 @@ profiles:
     - f_2-direnv.sh
     - f_vcpkg.sh
   hotel-laptop-2.local:
-    include: [wezterm, neovim, user]
+    include: [wezterm, neovim, user, gemini, claude]
   wayland:
     dotfiles:
     - f_wezterm_wayland.lua
