@@ -64,6 +64,11 @@ group = "user"
 manager = "cargo"
 group = "user"
 
+[tools.ripgrep]
+manager = "cargo"
+group = "user"
+command = "rg"
+
 [tools.glow]
 manager = "github-release"
 group = "user"

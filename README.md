@@ -41,7 +41,7 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | **`neovim`** | Editor environment | `init.lua`, `coc-settings.json`, vim-plug, Neovim release installer. |
 | **`wezterm`** | Terminal emulator | `wezterm.lua` (with mixin loader), completions, `wezterm` installer, `pokemon-terminal`, `terminal-pane-display` skill. |
 | **`wsl`** | Windows Subsystem for Linux | Includes `[bash, neovim, user]` + `pokemon-terminal` (themes Windows Terminal, skips WezTerm GUI configs). |
-| **`user`** | General CLI utilities | Installs modern Rust/Python/Go CLI tools (`dust`, `eza`, `bat`, `glow`, `termaid`). |
+| **`user`** | General CLI utilities | Installs modern Rust/Python/Go CLI tools (`dust`, `eza`, `bat`, `glow`, `termaid`, `ripgrep`). |
 | **`gemini`** | Antigravity / Gemini CLI | Symlinks `~/.gemini/config/skills` $\rightarrow$ `~/.config/agents/skills`. |
 | **`claude`** | Claude Code | Symlinks `~/.claude/skills` $\rightarrow$ `~/.config/agents/skills`. |
 | **`wayland`** | Display server mixin | Deploys `~/.config/wezterm/mixins/wayland.lua` (`enable_wayland = false`). |
@@ -60,7 +60,7 @@ CLI tools and application binaries are declared centrally in [`dotfiles/config/u
    - Supports custom git forks with automatic editable local checkout detection (e.g., `pokemon-terminal`).
 
 2. **`cargo` (Rust tools)**:
-   - Installs crates to `~/.cargo/bin/` via `cargo install --locked` (e.g., `du-dust`, `eza`, `bat`).
+   - Installs crates to `~/.cargo/bin/` via `cargo install --locked` (e.g., `du-dust`, `eza`, `bat`, `ripgrep`).
    - Automatically skips recompilation if the binary is already present.
 
 3. **`github-release` (Precompiled Binaries & AppImages)**:
