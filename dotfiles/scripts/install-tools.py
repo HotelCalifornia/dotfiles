@@ -562,7 +562,7 @@ def tool_matches_group(cfg, target_group):
 
 def main():
     parser = argparse.ArgumentParser(description="Install tools via uv, cargo, and github-release from tools.toml manifest")
-    parser.add_argument("manifest", nargs="?", help="Path to tools.toml (defaults to ~/.config/uv/tools.toml)")
+    parser.add_argument("manifest", nargs="?", help="Path to tools.toml (defaults to ~/.config/tools.toml)")
     parser.add_argument("--tool", help="Install a specific tool only")
     parser.add_argument("--group", help="Filter tools by group (e.g. shell, terminal, neovim, user)")
     parser.add_argument(
@@ -577,9 +577,10 @@ def main():
     manifest_path = args.manifest
     if not manifest_path:
         for candidate in [
-            os.path.expanduser("~/.config/uv/tools.toml"),
             os.path.expanduser("~/.config/tools.toml"),
-            os.path.join(os.path.dirname(__file__), "../config/uv/tools.toml"),
+            os.path.expanduser("~/.config/tools/tools.toml"),
+            os.path.join(os.path.dirname(__file__), "../config/tools.toml"),
+            os.path.expanduser("~/.config/uv/tools.toml"),
             os.path.join(os.getcwd(), "tools.toml"),
         ]:
             if os.path.isfile(candidate):

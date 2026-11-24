@@ -19,7 +19,7 @@ Features a declarative profile architecture, unified toolchain management via `u
 │   │   ├── nvim/                   # Neovim configuration & plugins
 │   │   ├── powerline/              # Powerline prompt themes & configuration
 │   │   ├── rc/                     # Modular shell rc scripts (.wezterm-completion, vcpkg, mac)
-│   │   ├── uv/tools.toml           # Declarative manifest for CLI/GUI tools
+│   │   ├── tools.toml              # Declarative manifest for CLI/GUI tools
 │   │   ├── wezterm/                # WezTerm configuration with dynamic mixin loader
 │   │   └── wezterm-mixins/         # Optional WezTerm mixins (e.g. wayland)
 │   ├── local/share/nvim/site/      # Vim-plug manager
@@ -51,7 +51,7 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 
 ## Tool Management (`tools.toml`)
 
-CLI tools and application binaries are declared centrally in [`dotfiles/config/uv/tools.toml`](dotfiles/config/uv/tools.toml) and dispatched through [`install-tools.py`](dotfiles/scripts/install-tools.py).
+CLI tools and application binaries are declared centrally in [`dotfiles/config/tools.toml`](dotfiles/config/tools.toml) and dispatched through [`install-tools.py`](dotfiles/scripts/install-tools.py).
 
 ### Supported Managers
 
