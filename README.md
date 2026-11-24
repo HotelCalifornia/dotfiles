@@ -87,24 +87,32 @@ CLI tools and application binaries are declared centrally in [`dotfiles/config/t
 
 ---
 
-## Agent Skills (`.config/agents/skills/`)
+## Agent Skills & Rules (`.config/agents/`)
 
-AI agent skills follow the open `SKILL.md` specification and reside in a canonical, harness-agnostic directory:
+AI agent skills and rules reside in a canonical, harness-agnostic directory structure:
 
 ```text
-~/.config/agents/skills/
-└── terminal-pane-display/
-    ├── SKILL.md
-    └── scripts/
-        ├── display.sh
-        ├── resize_pane.sh
-        └── close_pane.sh
+~/.config/agents/
+├── rules/
+│   └── preferred-tools.md      # Enforces modern CLI tool preferences (rg, bat, eza, etc.)
+└── skills/
+    └── terminal-pane-display/
+        ├── SKILL.md
+        └── scripts/
+            ├── display.sh
+            ├── resize_pane.sh
+            └── close_pane.sh
 ```
 
 - When the `gemini` and `claude` profiles are active, dotdrop establishes symlinks:
-  - `~/.gemini/config/skills` $\rightarrow$ `~/.config/agents/skills`
-  - `~/.claude/skills` $\rightarrow$ `~/.config/agents/skills`
-- Skills authored once under `.config/agents/skills/` are instantly discovered and usable by both Antigravity and Claude Code.
+  - **Gemini / Antigravity**:
+    - `~/.gemini/config/skills` $\rightarrow$ `~/.config/agents/skills`
+    - `~/.gemini/config/rules` $\rightarrow$ `~/.config/agents/rules`
+  - **Claude Code**:
+    - `~/.claude/skills` $\rightarrow$ `~/.config/agents/skills`
+    - `~/.claude/rules` $\rightarrow$ `~/.config/agents/rules`
+    - `~/.claude/CLAUDE.md` $\rightarrow$ `~/.config/agents/rules/preferred-tools.md`
+- Skills and rules authored once under `.config/agents/` are automatically discovered and enforced by both Antigravity and Claude Code.
 
 ---
 

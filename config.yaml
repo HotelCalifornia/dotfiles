@@ -74,6 +74,9 @@ dotfiles:
     src: scripts/link-agent-skills.sh
     dst: ~/.local/bin/link-agent-skills.sh
     chmod: '755'
+  d_agents_rules:
+    src: config/agents/rules
+    dst: ~/.config/agents/rules
 actions:
   ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
@@ -124,6 +127,7 @@ profiles:
     - f_ensure_toolchains
     - f_tools.toml
     - f_install_tools
+    - d_agents_rules
     actions:
     - ensure_toolchains
     - install_user_tools
