@@ -28,26 +28,26 @@ STANDARD_MIXINS = [
 
 PRESETS = {
     "1": {
-        "name": "macOS Workstation",
-        "description": "wezterm, neovim, user, gemini (Recommended for macOS)",
-        "include": ["wezterm", "neovim", "user", "gemini"],
+        "name": "Workstation",
+        "description": "wezterm, neovim, user (Full terminal, editor & modern CLI tools)",
+        "include": ["wezterm", "neovim", "user"],
         "suggest_mac_rc": True,
     },
     "2": {
-        "name": "macOS Workstation + Claude",
-        "description": "wezterm, neovim, user, gemini, claude",
-        "include": ["wezterm", "neovim", "user", "gemini", "claude"],
-        "suggest_mac_rc": True,
+        "name": "WSL Workstation",
+        "description": "wsl, neovim, user (Windows Subsystem for Linux, editor & CLI tools)",
+        "include": ["wsl", "neovim", "user"],
+        "suggest_mac_rc": False,
     },
     "3": {
-        "name": "WSL / Headless Linux Workstation",
-        "description": "wsl, user, gemini",
-        "include": ["wsl", "user", "gemini"],
+        "name": "Headless / Server",
+        "description": "neovim, user (Editor & modern CLI tools)",
+        "include": ["neovim", "user"],
         "suggest_mac_rc": False,
     },
     "4": {
-        "name": "Minimal Shell Environment",
-        "description": "bash, user",
+        "name": "Minimal Shell",
+        "description": "bash, user (Core shell prompt & CLI tools)",
         "include": ["bash", "user"],
         "suggest_mac_rc": False,
     },
@@ -164,10 +164,10 @@ def write_profile_to_config(config_path, hostname, include_list, extra_dotfiles=
 
 def prompt_custom_mixins():
     print("\nSelect mixins to include (toggle numbers separated by spaces or commas):")
-    selected = set(["wezterm", "neovim", "user", "gemini"])
-    if platform.system() != "Darwin":
+    selected = set(["wezterm", "neovim", "user"])
+    if "microsoft" in platform.uname().release.lower():
         selected.discard("wezterm")
-        selected.add("wsl" if "microsoft" in platform.uname().release.lower() else "bash")
+        selected.add("wsl")
 
     keys = [item[0] for item in STANDARD_MIXINS]
 
@@ -252,14 +252,15 @@ def main():
         include_list = list(preset["include"])
         suggest_mac_rc = preset.get("suggest_mac_rc", False)
     elif args.non_interactive:
-        # Default non-interactive preset based on OS
-        preset = PRESETS["1"] if platform.system() == "Darwin" else PRESETS["3"]
+        # Default non-interactive preset: Workstation (or WSL Workstation on WSL)
+        is_wsl = "microsoft" in platform.uname().release.lower()
+        preset = PRESETS["2"] if is_wsl else PRESETS["1"]
         include_list = list(preset["include"])
         suggest_mac_rc = preset.get("suggest_mac_rc", False)
     else:
         print("\nChoose a profile preset:")
         for k, p in PRESETS.items():
-            print(f"  [{k}] {p['name']:<30} - {p['description']}")
+            print(f"  [{k}] {p['name']:<25} - {p['description']}")
         print("  [5] Custom mixin selection...")
 
         choice = input("\nSelect preset [default: 1]: ").strip() or "1"
@@ -272,6 +273,11 @@ def main():
             print("Invalid choice, defaulting to preset 1.")
             include_list = list(PRESETS["1"]["include"])
             suggest_mac_rc = True
+
+        if choice != "5" and "gemini" not in include_list:
+            resp = input("\nInclude Gemini / Antigravity agent skills & rules? [y/N]: ").strip().lower()
+            if resp in ("y", "yes"):
+                include_list.append("gemini")
 
     # Extra dotfiles (e.g. macOS rc hooks)
     extra_dotfiles = []

@@ -159,7 +159,7 @@ pip3 install --user dotdrop
 
 `init-profile.py` automatically:
 - Detects the machine's hostname (or accepts a custom override).
-- Prompts for common profile presets (e.g. macOS Workstation, WSL/Linux, Minimal) or custom mixin selection.
+- Prompts for common profile presets (e.g. Workstation, WSL Workstation, Minimal Shell) or custom mixin selection.
 - Safely writes the profile block into `config.yaml`.
 - Prompts to immediately run `dotdrop install -a -f` to apply dotfiles and bootstrap toolchains.
 
