@@ -9,11 +9,19 @@ eval "$(ssh-agent -s)" > /dev/null
 
 export MANPATH="$MANPATH:${HOME}/.local/share/man"
 
-POWERLINE_DIR="$(pip show powerline-status | grep Location | cut -d' ' -f 2 -)"
 powerline-daemon -q
 POWERLINE_BASH_CONTINUATION=1
 POWERLINE_BASH_SELECT=1
-source "$POWERLINE_DIR/powerline/bindings/bash/powerline.sh"
+if command -v uv >/dev/null 2>&1; then
+    # bindings ship as package data in the tool venv's site-packages, not bin/
+    for POWERLINE_BINDINGS in "$(uv tool dir)"/powerline-status/lib/python3*/site-packages/powerline/bindings/bash/powerline.sh; do
+        [ -f "$POWERLINE_BINDINGS" ] && source "$POWERLINE_BINDINGS" && break
+    done
+fi
+
+# dotdrop only accepts --cfg after the subcommand, so point it at the repo config via env var.
+# DOTFILES_DIR is recorded on first install by the persist_dotfiles_dir action (rc/pre/00-dotfiles.sh).
+alias dotdrop='DOTDROP_CONFIG="${DOTFILES_DIR:-$HOME/dotfiles}/config.yaml" dotdrop'
 
 rgf() {
     # no quotes around @ expansion because search patterns and escapes

@@ -30,6 +30,9 @@ dotfiles:
   f_bash_aliases:
     src: bash_aliases
     dst: ~/.bash_aliases
+  f_gitconfig:
+    src: gitconfig
+    dst: ~/.gitconfig
   f_spitfire.sh:
     src: config/rc/spitfire.sh
     dst: ~/.config/rc/spitfire.sh
@@ -42,9 +45,12 @@ dotfiles:
   f_wezterm.sh:
     src: config/rc/wezterm.sh
     dst: ~/.config/rc/wezterm.sh
-  f_0-mac.sh:
-    src: config/rc/pre/0-mac.sh
-    dst: ~/.config/rc/pre/0-mac.sh
+  f_0-bash.sh:
+    src: config/rc/pre/0-bash.sh
+    dst: ~/.config/rc/pre/0-bash.sh
+  f_1-mac.sh:
+    src: config/rc/pre/1-mac.sh
+    dst: ~/.config/rc/pre/1-mac.sh
   f_1-pyenv.sh:
     src: config/rc/pre/1-pyenv.sh
     dst: ~/.config/rc/pre/1-pyenv.sh
@@ -84,6 +90,7 @@ dotfiles:
     dst: ~/.config/agents/rules
 
 actions:
+  persist_dotfiles_dir: bash "{{@@ _dotdrop_dotpath @@}}/scripts/persist-dotfiles-dir.sh" "{{@@ _dotdrop_cfgpath @@}}"
   ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
   install_neovim_tools: ~/.local/bin/install-tools.py --group neovim
@@ -96,12 +103,14 @@ actions:
 profiles:
   bash:
     dotfiles:
+      - f_0-bash.sh
       - d_powerline
       - f_bash_aliases
       - f_ensure_toolchains
       - f_tools.toml
       - f_install_tools
     actions:
+      - persist_dotfiles_dir
       - ensure_toolchains
       - install_shell_tools
 
@@ -160,6 +169,10 @@ profiles:
     dotfiles:
       - f_wezterm_wayland.lua
 
+  git:
+    dotfiles:
+      - f_gitconfig
+
   bose:
     include: [bash, neovim]
     dotfiles:
@@ -169,10 +182,19 @@ profiles:
     include: [wezterm, neovim, user, gemini, claude]
     dotfiles:
       - f_most.sh
-      - f_0-mac.sh
+      - f_1-mac.sh
       - f_1-pyenv.sh
       - f_2-direnv.sh
       - f_vcpkg.sh
 
   hotel-laptop-2.local:
     include: [wezterm, neovim, user, gemini]
+    dotfiles:
+      - f_most.sh
+      - f_1-mac.sh
+      - f_1-pyenv.sh
+      - f_2-direnv.sh
+      - f_vcpkg.sh
+
+  rise-33:
+    include: [wezterm, neovim, user, wayland, claude, git]
