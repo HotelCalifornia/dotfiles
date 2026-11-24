@@ -1,6 +1,14 @@
-alias wezterm=$WEZTERM_EXECUTABLE_DIR/wezterm
+if [ -n "$WEZTERM_EXECUTABLE_DIR" ]; then
+	alias wezterm="$WEZTERM_EXECUTABLE_DIR/wezterm"
+elif [ -x "/Applications/WezTerm.app/Contents/MacOS/wezterm" ] && ! command -v wezterm >/dev/null 2>&1; then
+	alias wezterm="/Applications/WezTerm.app/Contents/MacOS/wezterm"
+fi
 
-source $HOME/.wezterm-completion
+if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/rc/.wezterm-completion" ]; then
+	source "${XDG_CONFIG_HOME:-$HOME/.config}/rc/.wezterm-completion"
+elif [ -f "$HOME/.wezterm-completion" ]; then
+	source "$HOME/.wezterm-completion"
+fi
 
 woman() {
 	wezterm cli split-pane --right -- man $* > /dev/null 2>&1
