@@ -113,6 +113,7 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 ```text
 ~/.config/agents/
 ├── rules/
+│   ├── git-commit-trailers.md
 │   └── preferred-tools.md
 └── skills/
     └── terminal-pane-display/
@@ -125,7 +126,8 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 
 | Section | Component | Purpose |
 | :--- | :--- | :--- |
-| **`rules/`** | `preferred-tools.md` | Enforces modern CLI tool preferences |
+| **`rules/`** | `git-commit-trailers.md` | Attributes AI harness and consulted models in commit trailers |
+| | `preferred-tools.md` | Enforces modern CLI tool preferences |
 | **`skills/`** | `terminal-pane-display/` | Multi-pane auxiliary rendering in WezTerm |
 
 - When the `gemini` and `claude` profiles are active, dotdrop establishes symlinks:
