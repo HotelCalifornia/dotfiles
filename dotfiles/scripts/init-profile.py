@@ -9,9 +9,8 @@
 Interactive host profile generator for Dotdrop.
 
 Detects the current device hostname, prompts for desired profile mixins
-and AI agent integrations via a streamlined TUI (powered by questionary & uv),
-and updates config.yaml so that subsequent `dotdrop install` commands
-automatically resolve to this device.
+and AI agent integrations via a streamlined TUI (powered by questionary & uv)
+with full navigation, review, and back-step support, then updates config.yaml.
 """
 
 import argparse
@@ -174,7 +173,7 @@ def write_profile_to_config(config_path, hostname, include_list, extra_dotfiles=
         f.writelines(new_lines)
 
 
-# --- Interactive TUI Prompts (using questionary if available) ---
+# --- Interactive TUI Prompts with Navigation & Back Support ---
 
 def safe_ask(prompt_obj):
     if not prompt_obj:
@@ -219,6 +218,7 @@ def ask_preset():
             for k, p in PRESETS.items()
         ]
         choices.append(questionary.Choice("Custom (Start with empty checklist)", value="custom"))
+        choices.append(questionary.Choice("« Back (Change device hostname)", value="__back__"))
 
         default_preset = "2" if "microsoft" in platform.uname().release.lower() else "1"
         ans = safe_ask(questionary.select(
@@ -235,141 +235,224 @@ def ask_preset():
         for k, p in PRESETS.items():
             print(f"  [{k}] {p['name']:<20} - {p['description']}")
         print("  [5] Custom (Start with empty checklist)")
+        print("  [b] Back (Change device hostname)")
         try:
-            return input("\nSelect preset [default: 1]: ").strip() or "1"
+            choice = input("\nSelect preset [default: 1]: ").strip() or "1"
         except (EOFError, KeyboardInterrupt):
             print("\nOperation cancelled.")
             sys.exit(0)
+        if choice.lower() in ("b", "back"):
+            return "__back__"
+        return choice
 
 
 def ask_mixins(preselected=None):
     selected_set = set(preselected or [])
 
-    if questionary:
-        choices = [
-            questionary.Choice(
-                title=f"{name:<10} - {desc}",
-                value=name,
-                checked=(name in selected_set),
-            )
-            for name, desc in STANDARD_MIXINS
-        ]
-        ans = safe_ask(questionary.checkbox(
-            "Review & toggle capabilities (Space to toggle, Enter to confirm):",
-            choices=choices,
-        ))
-        if ans is None:
-            print("\nOperation cancelled.")
-            sys.exit(0)
-        return ans
-    else:
-        print("\nReview capabilities (toggle numbers separated by spaces or commas):")
-        selected = set(selected_set)
-        keys = [item[0] for item in STANDARD_MIXINS]
-        while True:
-            print()
-            for idx, (k, desc) in enumerate(STANDARD_MIXINS, 1):
-                mark = "[x]" if k in selected else "[ ]"
-                print(f"  {mark} {idx}. {k:<10} - {desc}")
-            print("\nEnter numbers to toggle, 'a' for all, or press Enter to confirm:")
+    while True:
+        if questionary:
+            choices = [
+                questionary.Choice(
+                    title=f"{name:<10} - {desc}",
+                    value=name,
+                    checked=(name in selected_set),
+                )
+                for name, desc in STANDARD_MIXINS
+            ]
+            ans = safe_ask(questionary.checkbox(
+                "Review & toggle capabilities (Space to toggle, Enter to proceed):",
+                choices=choices,
+            ))
+            if ans is None:
+                print("\nOperation cancelled.")
+                sys.exit(0)
+            selected_set = set(ans)
+
+            # Navigation confirmation step
+            nav = safe_ask(questionary.select(
+                f"Capabilities selected: [{', '.join(ans) or 'None'}]",
+                choices=[
+                    questionary.Choice("Proceed to AI agents →", value="next"),
+                    questionary.Choice("Re-open capabilities checklist ⟲", value="retry"),
+                    questionary.Choice("« Back to starting presets", value="back"),
+                ],
+                default="next",
+            ))
+            if nav is None or nav == "next":
+                return list(ans), "next"
+            elif nav == "retry":
+                continue
+            elif nav == "back":
+                return list(ans), "back"
+        else:
+            print("\nReview capabilities (toggle numbers separated by spaces or commas):")
+            selected = set(selected_set)
+            keys = [item[0] for item in STANDARD_MIXINS]
+            while True:
+                print()
+                for idx, (k, desc) in enumerate(STANDARD_MIXINS, 1):
+                    mark = "[x]" if k in selected else "[ ]"
+                    print(f"  {mark} {idx}. {k:<10} - {desc}")
+                print("\nEnter numbers to toggle, 'a' for all, 'b' for back, or Enter to proceed:")
+                try:
+                    choice = input("Toggle > ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    print("\nOperation cancelled.")
+                    sys.exit(0)
+                if not choice:
+                    break
+                if choice.lower() == "a":
+                    selected = set(keys)
+                    continue
+                if choice.lower() in ("b", "back"):
+                    return list(selected), "back"
+                for p in re.split(r"[\s,]+", choice):
+                    if p.isdigit():
+                        val = int(p)
+                        if 1 <= val <= len(keys):
+                            target = keys[val - 1]
+                            if target in selected:
+                                selected.remove(target)
+                            else:
+                                selected.add(target)
+            return [k for k in keys if k in selected], "next"
+
+
+def ask_ai_agents(preselected=None):
+    selected_set = set(preselected or [])
+
+    while True:
+        if questionary:
+            choices = [
+                questionary.Choice(
+                    title=f"{label:<26} - {desc}",
+                    value=key,
+                    checked=(key in selected_set),
+                )
+                for key, label, desc in AVAILABLE_AGENTS
+            ]
+            ans = safe_ask(questionary.checkbox(
+                "Select AI agent integrations (Space to toggle, Enter to proceed):",
+                choices=choices,
+            ))
+            if ans is None:
+                print("\nOperation cancelled.")
+                sys.exit(0)
+            selected_set = set(ans)
+
+            # Navigation confirmation step
+            nav = safe_ask(questionary.select(
+                f"AI agents selected: [{', '.join(ans) or 'None'}]",
+                choices=[
+                    questionary.Choice("Proceed to review →", value="next"),
+                    questionary.Choice("Re-open AI agents checklist ⟲", value="retry"),
+                    questionary.Choice("« Back to capabilities", value="back"),
+                ],
+                default="next",
+            ))
+            if nav is None or nav == "next":
+                return list(ans), "next"
+            elif nav == "retry":
+                continue
+            elif nav == "back":
+                return list(ans), "back"
+        else:
+            keys = [item[0] for item in AVAILABLE_AGENTS]
+            print("\n\033[1;36mAI Tool Integrations\033[0m")
+            print("Select AI agents to configure with canonical rules & skills:")
+            for idx, (k, label, desc) in enumerate(AVAILABLE_AGENTS, 1):
+                mark = "[x]" if k in selected_set else "[ ]"
+                print(f"  {mark} [{idx}] {label:<26} - {desc}")
+            print("  [a] All agents")
+            print("  [b] Back to capabilities")
+            print("  [n] None / Skip [Default]")
+
             try:
-                choice = input("Toggle > ").strip()
+                choice = input("\nSelect agents (e.g. '1', '1, 2', 'a', 'b', or Enter to skip): ").strip()
             except (EOFError, KeyboardInterrupt):
                 print("\nOperation cancelled.")
                 sys.exit(0)
-            if not choice:
-                break
+            if not choice or choice.lower() in ("n", "none", "skip"):
+                return [], "next"
+            if choice.lower() in ("b", "back"):
+                return list(selected_set), "back"
             if choice.lower() == "a":
-                selected = set(keys)
-                continue
+                return list(keys), "next"
+
+            chosen = set()
             for p in re.split(r"[\s,]+", choice):
                 if p.isdigit():
                     val = int(p)
                     if 1 <= val <= len(keys):
-                        target = keys[val - 1]
-                        if target in selected:
-                            selected.remove(target)
-                        else:
-                            selected.add(target)
-        return [k for k in keys if k in selected]
-
-
-def ask_ai_agents():
-    if questionary:
-        choices = [
-            questionary.Choice(
-                title=f"{label:<26} - {desc}",
-                value=key,
-                checked=False,  # Unchecked by default
-            )
-            for key, label, desc in AVAILABLE_AGENTS
-        ]
-        ans = safe_ask(questionary.checkbox(
-            "Select AI agent integrations (Space to toggle, Enter to confirm/skip):",
-            choices=choices,
-        ))
-        if ans is None:
-            print("\nOperation cancelled.")
-            sys.exit(0)
-        return ans
-    else:
-        keys = [item[0] for item in AVAILABLE_AGENTS]
-        print("\n\033[1;36mAI Tool Integrations\033[0m")
-        print("Select AI agents to configure with canonical rules & skills:")
-        for idx, (k, label, desc) in enumerate(AVAILABLE_AGENTS, 1):
-            print(f"  [{idx}] {label:<26} - {desc}")
-        print("  [a] All agents")
-        print("  [n] None / Skip [Default]")
-
-        try:
-            choice = input("\nSelect agents to integrate (e.g. '1', '1, 2', 'a', or Enter to skip): ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nOperation cancelled.")
-            sys.exit(0)
-        if not choice or choice.lower() in ("n", "none", "skip"):
-            return []
-        if choice.lower() == "a":
-            return list(keys)
-
-        chosen = set()
-        for p in re.split(r"[\s,]+", choice):
-            if p.isdigit():
-                val = int(p)
-                if 1 <= val <= len(keys):
-                    chosen.add(keys[val - 1])
-            elif p.lower() in keys:
-                chosen.add(p.lower())
-        return [k for k in keys if k in chosen]
+                        chosen.add(keys[val - 1])
+                elif p.lower() in keys:
+                    chosen.add(p.lower())
+            return [k for k in keys if k in chosen], "next"
 
 
 def ask_mac_hooks():
     if questionary:
-        ans = safe_ask(questionary.confirm(
-            "Include macOS shell environment hooks (pyenv, direnv, vcpkg)?",
+        choices = [
+            questionary.Choice("Skip macOS shell environment hooks [Default]", value=False),
+            questionary.Choice("Include pyenv, direnv, vcpkg hooks", value=True),
+            questionary.Choice("« Back to AI agent integrations", value="__back__"),
+        ]
+        ans = safe_ask(questionary.select(
+            "macOS Environment Hooks:",
+            choices=choices,
             default=False,
         ))
-        return bool(ans)
+        if ans == "__back__":
+            return False, "back"
+        return bool(ans), "next"
     else:
         try:
-            resp = input("\nInclude macOS shell environment hooks (pyenv, direnv, vcpkg)? [y/N]: ").strip().lower()
-            return resp in ("y", "yes")
+            resp = input("\nInclude macOS shell environment hooks (pyenv, direnv, vcpkg)? [y/N/back]: ").strip().lower()
+            if resp in ("b", "back"):
+                return False, "back"
+            return resp in ("y", "yes"), "next"
         except (EOFError, KeyboardInterrupt):
-            return False
+            return False, "next"
 
 
-def ask_write_confirm(hostname, config_path):
+def ask_review_action(hostname, config_path):
     if questionary:
-        ans = safe_ask(questionary.confirm(
-            f"Write profile '{hostname}' to {config_path}?",
-            default=True,
+        ans = safe_ask(questionary.select(
+            "Review profile definition:",
+            choices=[
+                questionary.Choice("✔ Save profile to config.yaml and continue", value="save"),
+                questionary.Choice("✎ Edit capabilities checklist", value="edit_mixins"),
+                questionary.Choice("✎ Edit AI agent integrations", value="edit_agents"),
+                questionary.Choice("✎ Change starting preset", value="edit_preset"),
+                questionary.Choice("✎ Change device hostname", value="edit_hostname"),
+                questionary.Choice("✖ Cancel and abort", value="abort"),
+            ],
+            default="save",
         ))
-        return bool(ans)
+        if ans is None:
+            return "abort"
+        return ans
     else:
+        print("\nReview actions:")
+        print("  [1] Save profile to config.yaml and continue [Default]")
+        print("  [2] Edit capabilities checklist")
+        print("  [3] Edit AI agent integrations")
+        print("  [4] Change starting preset")
+        print("  [5] Change device hostname")
+        print("  [6] Cancel and abort")
         try:
-            confirm = input(f"\nWrite this profile to \033[34m{config_path}\033[0m? [Y/n]: ").strip().lower()
-            return confirm not in ("n", "no")
+            choice = input("Select [1-6]: ").strip() or "1"
         except (EOFError, KeyboardInterrupt):
-            return False
+            return "abort"
+        mapping = {
+            "1": "save",
+            "2": "edit_mixins",
+            "3": "edit_agents",
+            "4": "edit_preset",
+            "5": "edit_hostname",
+            "6": "abort",
+        }
+        return mapping.get(choice, "save")
 
 
 def ask_run_install():
@@ -385,6 +468,92 @@ def ask_run_install():
             return run_now not in ("n", "no")
         except (EOFError, KeyboardInterrupt):
             return False
+
+
+def run_interactive_wizard(config_path, default_host, args):
+    hostname = args.hostname or default_host
+    preset_choice = "1"
+    include_list = list(PRESETS["1"]["include"])
+    suggest_mac_rc = PRESETS["1"].get("suggest_mac_rc", False)
+    selected_agents = []
+    mac_rc_enabled = False
+
+    step = "hostname"
+    if args.hostname:
+        step = "preset"
+
+    while True:
+        if step == "hostname":
+            hostname = ask_hostname(default_host)
+            step = "preset"
+
+        elif step == "preset":
+            p_ans = ask_preset()
+            if p_ans == "__back__":
+                step = "hostname"
+                continue
+            preset_choice = p_ans
+            if preset_choice in PRESETS:
+                include_list = list(PRESETS[preset_choice]["include"])
+                suggest_mac_rc = PRESETS[preset_choice].get("suggest_mac_rc", False)
+            else:
+                include_list = []
+                suggest_mac_rc = True
+            step = "mixins"
+
+        elif step == "mixins":
+            mixins_ans, nav = ask_mixins(include_list)
+            if nav == "back":
+                step = "preset"
+                continue
+            include_list = mixins_ans
+            step = "agents"
+
+        elif step == "agents":
+            agents_ans, nav = ask_ai_agents(selected_agents)
+            if nav == "back":
+                step = "mixins"
+                continue
+            selected_agents = agents_ans
+            step = "mac_hooks" if (platform.system() == "Darwin" and suggest_mac_rc) else "review"
+
+        elif step == "mac_hooks":
+            mac_rc_enabled, nav = ask_mac_hooks()
+            if nav == "back":
+                step = "agents"
+                continue
+            step = "review"
+
+        elif step == "review":
+            full_includes = list(include_list)
+            for ag in selected_agents:
+                if ag not in full_includes:
+                    full_includes.append(ag)
+            extra_dfs = list(MAC_RC_DOTFILES) if mac_rc_enabled else []
+
+            print("\n\033[1;32mGenerated Profile Definition:\033[0m")
+            print(f"  \033[1m{hostname}\033[0m:")
+            if full_includes:
+                print(f"    include: [{', '.join(full_includes)}]")
+            if extra_dfs:
+                print("    dotfiles:")
+                for df in extra_dfs:
+                    print(f"      - {df}")
+
+            action = ask_review_action(hostname, config_path)
+            if action == "save":
+                return hostname, full_includes, extra_dfs
+            elif action == "edit_mixins":
+                step = "mixins"
+            elif action == "edit_agents":
+                step = "agents"
+            elif action == "edit_preset":
+                step = "preset"
+            elif action == "edit_hostname":
+                step = "hostname"
+            elif action == "abort":
+                print("Aborted.")
+                sys.exit(0)
 
 
 def main():
@@ -414,107 +583,85 @@ def main():
     print(f"Configuration: \033[34m{config_path}\033[0m\n")
 
     default_host = get_default_hostname()
-    hostname = args.hostname or (ask_hostname(default_host) if not args.non_interactive else default_host)
+
+    # Non-interactive execution branch
+    if args.non_interactive:
+        hostname = args.hostname or default_host
+        profiles, _ = read_config_profiles(config_path)
+        if hostname in profiles and not args.force:
+            print(f"Notice: Profile '{hostname}' already exists in config.yaml. Pass --force to overwrite.", file=sys.stderr)
+            sys.exit(1)
+
+        include_list = []
+        if args.include:
+            include_list = [x.strip() for x in args.include.split(",") if x.strip()]
+        elif args.preset:
+            include_list = list(PRESETS[args.preset]["include"])
+        else:
+            is_wsl = "microsoft" in platform.uname().release.lower()
+            preset = PRESETS["2"] if is_wsl else PRESETS["1"]
+            include_list = list(preset["include"])
+
+        if args.agents and args.agents.lower() not in ("none", "no", "false", ""):
+            for ag in [x.strip() for x in args.agents.split(",") if x.strip()]:
+                if ag not in include_list:
+                    include_list.append(ag)
+
+        extra_dotfiles = list(MAC_RC_DOTFILES) if args.mac_rc else []
+
+        print("\n\033[1;32mGenerated Profile Definition:\033[0m")
+        print(f"  \033[1m{hostname}\033[0m:")
+        if include_list:
+            print(f"    include: [{', '.join(include_list)}]")
+        if extra_dotfiles:
+            print("    dotfiles:")
+            for df in extra_dotfiles:
+                print(f"      - {df}")
+
+        if args.dry_run:
+            print("\n[--dry-run specified; config.yaml not modified]")
+            sys.exit(0)
+
+        write_profile_to_config(config_path, hostname, include_list, extra_dotfiles)
+        print(f"\n\033[32mSuccessfully updated profile '{hostname}' in config.yaml!\033[0m")
+        if args.install:
+            subprocess.run(["dotdrop", "install", "-a", "-f"])
+        return
+
+    # Interactive Wizard branch
+    hostname, include_list, extra_dotfiles = run_interactive_wizard(config_path, default_host, args)
 
     profiles, _ = read_config_profiles(config_path)
     if hostname in profiles and not args.force:
-        print(f"\n\033[33mNotice:\033[0m Profile '\033[1m{hostname}\033[0m' already exists in config.yaml.")
-        if args.non_interactive:
-            print("To overwrite, pass --force.", file=sys.stderr)
-            sys.exit(1)
         if questionary:
-            overwrite = safe_ask(questionary.confirm(f"Overwrite / reconfigure profile '{hostname}'?", default=False))
+            overwrite = safe_ask(questionary.confirm(f"Profile '{hostname}' already exists. Overwrite in config.yaml?", default=True))
             if not overwrite:
                 print("Aborted.")
                 sys.exit(0)
         else:
             try:
-                resp = input("Overwrite / reconfigure this profile? [y/N]: ").strip().lower()
+                resp = input(f"Profile '{hostname}' already exists. Overwrite? [Y/n]: ").strip().lower()
+                if resp in ("n", "no"):
+                    print("Aborted.")
+                    sys.exit(0)
             except (EOFError, KeyboardInterrupt):
-                print("Aborted.")
                 sys.exit(0)
-            if resp not in ("y", "yes"):
-                print("Aborted.")
-                sys.exit(0)
-
-    # Base mixin selection
-    include_list = []
-    suggest_mac_rc = False
-
-    if args.include:
-        include_list = [x.strip() for x in args.include.split(",") if x.strip()]
-    elif args.preset:
-        preset = PRESETS[args.preset]
-        include_list = list(preset["include"])
-        suggest_mac_rc = preset.get("suggest_mac_rc", False)
-    elif args.non_interactive:
-        is_wsl = "microsoft" in platform.uname().release.lower()
-        preset = PRESETS["2"] if is_wsl else PRESETS["1"]
-        include_list = list(preset["include"])
-        suggest_mac_rc = preset.get("suggest_mac_rc", False)
-    else:
-        choice = ask_preset()
-        if choice in PRESETS:
-            initial_mixins = list(PRESETS[choice]["include"])
-            suggest_mac_rc = PRESETS[choice].get("suggest_mac_rc", False)
-        else:
-            initial_mixins = []
-            suggest_mac_rc = True
-
-        # Pre-populate capabilities checklist from the selected preset:
-        include_list = ask_mixins(initial_mixins)
-
-    # AI Agents selection step
-    selected_agents = []
-    if args.agents is not None:
-        if args.agents.lower() not in ("none", "no", "false", ""):
-            selected_agents = [x.strip() for x in args.agents.split(",") if x.strip()]
-    elif not args.non_interactive:
-        selected_agents = ask_ai_agents()
-
-    for ag in selected_agents:
-        if ag not in include_list:
-            include_list.append(ag)
-
-    # Extra dotfiles (e.g. macOS rc hooks)
-    extra_dotfiles = []
-    if args.mac_rc:
-        extra_dotfiles = list(MAC_RC_DOTFILES)
-    elif not args.non_interactive and platform.system() == "Darwin" and suggest_mac_rc:
-        if ask_mac_hooks():
-            extra_dotfiles = list(MAC_RC_DOTFILES)
-
-    # Display preview
-    print("\n\033[1;32mGenerated Profile Definition:\033[0m")
-    print(f"  \033[1m{hostname}\033[0m:")
-    if include_list:
-        print(f"    include: [{', '.join(include_list)}]")
-    if extra_dotfiles:
-        print("    dotfiles:")
-        for df in extra_dotfiles:
-            print(f"      - {df}")
 
     if args.dry_run:
         print("\n[--dry-run specified; config.yaml not modified]")
         sys.exit(0)
 
-    if not args.non_interactive:
-        if not ask_write_confirm(hostname, config_path):
-            print("Aborted.")
-            sys.exit(0)
-
     write_profile_to_config(config_path, hostname, include_list, extra_dotfiles)
     print(f"\n\033[32mSuccessfully updated profile '{hostname}' in config.yaml!\033[0m")
 
-    # Ask to install
+    # Offer to install
     do_install = args.install
-    if not do_install and not args.non_interactive:
+    if not do_install:
         do_install = ask_run_install()
 
     if do_install:
         print("\n\033[36mRunning dotdrop install -a -f...\033[0m\n")
-        cmd = ["dotdrop", "install", "-a", "-f"]
-        subprocess.run(cmd)
+        subprocess.run(["dotdrop", "install", "-a", "-f"])
 
 
 if __name__ == "__main__":
