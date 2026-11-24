@@ -154,7 +154,7 @@ profiles:
     - f_2-direnv.sh
     - f_vcpkg.sh
   hotel-laptop-2.local:
-    include: [wezterm, neovim, user, gemini, claude]
+    include: [wezterm, neovim, user, gemini]
   wayland:
     dotfiles:
     - f_wezterm_wayland.lua
