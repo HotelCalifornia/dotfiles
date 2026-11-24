@@ -10,25 +10,41 @@ Features a declarative profile architecture, unified toolchain management via `u
 
 ```text
 .
-├── config.yaml                     # Dotdrop profile & action definitions
-├── dotfiles/
-│   ├── bash_aliases                # Shell aliases
-│   ├── config/
-│   │   ├── agents/                 # Canonical cross-harness AI agent configs
-│   │   │   ├── rules/              # Modular agent rules
-│   │   │   └── skills/             # Open agent skills
-│   │   ├── nvim/                   # Neovim configuration & plugins
-│   │   ├── powerline/              # Powerline prompt themes & configuration
-│   │   ├── rc/                     # Modular shell rc scripts
-│   │   ├── tools.toml              # Declarative manifest for CLI/GUI tools
-│   │   ├── wezterm/                # WezTerm configuration with dynamic mixin loader
-│   │   └── wezterm-mixins/         # Optional platform WezTerm mixins
-│   ├── local/share/nvim/site/      # Vim-plug manager
-│   └── scripts/
-│       ├── ensure-toolchains.sh    # Bootstraps development toolchains
-│       ├── install-tools.py        # Multi-manager tool installer
-│       └── link-agent-skills.sh    # Symlinks agent configs across harnesses
+├── config.yaml
+└── dotfiles/
+    ├── bash_aliases
+    ├── config/
+    │   ├── agents/
+    │   │   ├── rules/
+    │   │   └── skills/
+    │   ├── nvim/
+    │   ├── powerline/
+    │   ├── rc/
+    │   ├── tools.toml
+    │   ├── wezterm/
+    │   └── wezterm-mixins/
+    ├── local/share/nvim/site/
+    └── scripts/
+        ├── ensure-toolchains.sh
+        ├── install-tools.py
+        └── link-agent-skills.sh
 ```
+
+| Section | Component | Purpose |
+| :--- | :--- | :--- |
+| **Root** | `config.yaml` | Dotdrop profile & action definitions |
+| **`dotfiles/`** | `bash_aliases` | Shell aliases |
+| **`config/`** | `agents/` | Canonical cross-harness rules & skills |
+| | `nvim/` | Neovim configuration & plugins |
+| | `powerline/` | Prompt themes & configuration |
+| | `rc/` | Modular shell runtime scripts |
+| | `tools.toml` | Declarative CLI/GUI tool manifest |
+| | `wezterm/` | WezTerm configuration & dynamic mixin loader |
+| | `wezterm-mixins/` | Optional platform WezTerm mixins |
+| **`local/`** | `share/nvim/site/` | Vim-plug plugin manager |
+| **`scripts/`** | `ensure-toolchains.sh` | Bootstraps development toolchains |
+| | `install-tools.py` | Multi-manager tool installer |
+| | `link-agent-skills.sh` | Symlinks agent configs across harnesses |
 
 ---
 
@@ -95,7 +111,7 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 ```text
 ~/.config/agents/
 ├── rules/
-│   └── preferred-tools.md      # Enforces modern CLI tool preferences
+│   └── preferred-tools.md
 └── skills/
     └── terminal-pane-display/
         ├── SKILL.md
@@ -104,6 +120,11 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
             ├── resize_pane.sh
             └── close_pane.sh
 ```
+
+| Section | Component | Purpose |
+| :--- | :--- | :--- |
+| **`rules/`** | `preferred-tools.md` | Enforces modern CLI tool preferences |
+| **`skills/`** | `terminal-pane-display/` | Multi-pane auxiliary rendering in WezTerm |
 
 - When the `gemini` and `claude` profiles are active, dotdrop establishes symlinks:
   - **Gemini / Antigravity**:

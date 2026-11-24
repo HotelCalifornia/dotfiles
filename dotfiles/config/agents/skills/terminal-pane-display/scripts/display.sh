@@ -326,6 +326,12 @@ fi
 chmod +x "$TMP_SCRIPT"
 
 if [[ -n "$EXISTING_PANE" ]]; then
+  if ! "$WEZTERM_BIN" cli list 2>/dev/null | awk -v pid="$EXISTING_PANE" '$3 == pid {found=1} END {exit !found}'; then
+    EXISTING_PANE=""
+  fi
+fi
+
+if [[ -n "$EXISTING_PANE" ]]; then
   # Interrupt whatever is currently running in the pane (e.g. tail -f /dev/null), clear, and run new script
   printf '\x03\x03' | "$WEZTERM_BIN" cli send-text --pane-id "$EXISTING_PANE" --no-paste
   sleep 0.1
@@ -337,6 +343,18 @@ else
     SIZE_ARG="--cells $EXPLICIT_CELLS"
   fi
 
-  NEW_PANE=$("$WEZTERM_BIN" cli split-pane --pane-id "$TARGET_PANE" "$DIRECTION" $SIZE_ARG -- /bin/bash "$TMP_SCRIPT")
+  SPLIT_ARGS=("$DIRECTION")
+  if [[ -n "$TARGET_PANE" ]]; then
+    SPLIT_ARGS+=(--pane-id "$TARGET_PANE")
+  fi
+  if [[ -n "$EXPLICIT_CELLS" ]]; then
+    SPLIT_ARGS+=(--cells "$EXPLICIT_CELLS")
+  else
+    SPLIT_ARGS+=(--percent "$PERCENT")
+  fi
+
+  NEW_PANE=$("$WEZTERM_BIN" cli split-pane "${SPLIT_ARGS[@]}")
+  sleep 0.2
+  "$WEZTERM_BIN" cli send-text --pane-id "$NEW_PANE" --no-paste "$TMP_SCRIPT"$'\n'
   echo "$NEW_PANE"
 fi
