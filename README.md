@@ -100,6 +100,8 @@ CLI tools and application binaries are declared centrally in [`dotfiles/config/t
    - Supports `extract = "full"` with `binary_path` for archives that ship a whole app tree, unpacked to `~/.local/share/<app>/<version>/`.
    - Supports `exec_args` (installs a wrapper script instead of a symlink), `installed_paths` (glob patterns; skip tools that self-manage once installed, and never delete their older unpacked copies), and `post_install_note`.
    - Desktop entries are regenerated when the icon they reference is missing.
+   - Supports `app_id` (the window's Wayland app_id / X11 WM_CLASS): the desktop entry is named `<app_id>.desktop` and gets a matching `StartupWMClass`, so taskbars show the right icon and pinning works.
+   - Supports `desktop_mime_types`: listed in the entry's `MimeType`; any `x-scheme-handler/*` (e.g. `obsidian://`) is also set as the default handler via `xdg-mime`, and `Exec` switches to `%U`. Entries are regenerated whenever they differ from the manifest.
 
 ### Tool CLI Usage
 

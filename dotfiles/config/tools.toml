@@ -22,6 +22,8 @@ desktop_name = "WezTerm"
 desktop_comment = "Wez's Terminal Emulator"
 desktop_categories = "System;TerminalEmulator;Utility;"
 icon_name = "wezterm"
+# Window app_id; names the desktop entry so the taskbar can match the window
+app_id = "org.wezfurlong.wezterm"
 
 # --- Terminal Theming & Tools (works with WezTerm and Windows Terminal in WSL) ---
 [tools.pokemon-terminal]
@@ -101,6 +103,11 @@ desktop_name = "Obsidian"
 desktop_comment = "Knowledge base and note-taking on local Markdown files"
 desktop_categories = "Office;TextEditor;"
 icon_name = "obsidian"
+# Window app_id; names the desktop entry so the taskbar can match the window
+app_id = "md.obsidian.Obsidian"
+# Same types as the AppImage's own entry; obsidian:// becomes the default handler,
+# file types are only offered under "Open with"
+desktop_mime_types = ["application/pdf", "text/markdown", "application/x-obsidian-canvas", "application/x-obsidian-base", "x-scheme-handler/obsidian"]
 
 [tools.jetbrains-toolbox]
 manager = "github-release"

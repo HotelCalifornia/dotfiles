@@ -292,10 +292,6 @@ def setup_desktop_entry(name, config, target_file, target_symlink):
     os.makedirs(icons_dir, exist_ok=True)
 
     cmd_name = config.get("command", name)
-    desktop_name = config.get("desktop_name", name.capitalize())
-    desktop_comment = config.get("desktop_comment", f"{desktop_name} Application")
-    categories = config.get("desktop_categories", "Utility;")
-    is_terminal = config.get("desktop_terminal", False)
     icon_name = config.get("icon_name", cmd_name)
 
     extracted_icon_path = None
@@ -345,22 +341,20 @@ def setup_desktop_entry(name, config, target_file, target_symlink):
     finally:
         shutil.rmtree(squash_dir, ignore_errors=True)
 
-    desktop_file = os.path.join(apps_dir, f"{cmd_name}.desktop")
-    icon_value = extracted_icon_path or icon_name
-    terminal_str = "true" if is_terminal else "false"
+    desktop_file = desktop_file_path(cmd_name, config)
+    fields = desktop_entry_fields(name, config, target_symlink)
+    fields["Icon"] = extracted_icon_path or icon_name
 
-    content = (
-        "[Desktop Entry]\n"
-        "Type=Application\n"
-        f"Name={desktop_name}\n"
-        f"Comment={desktop_comment}\n"
-        f"Exec={target_symlink} %F\n"
-        f"Icon={icon_value}\n"
-        f"Terminal={terminal_str}\n"
-        f"Categories={categories}\n"
-    )
+    order = ["Type", "Name", "Comment", "Exec", "Icon", "Terminal", "Categories", "StartupWMClass", "MimeType"]
+    content = "[Desktop Entry]\n" + "".join(f"{k}={fields[k]}\n" for k in order if k in fields)
     with open(desktop_file, "w", encoding="utf-8") as f:
         f.write(content)
+
+    # Drop an entry written under the old name before app_id was set
+    legacy_file = os.path.join(apps_dir, f"{cmd_name}.desktop")
+    if legacy_file != desktop_file and os.path.exists(legacy_file):
+        os.remove(legacy_file)
+        print(f"[appimage:{name}] Removed old desktop entry: {legacy_file}")
 
     print(f"[appimage:{name}] Installed desktop entry: {desktop_file}")
 
@@ -369,6 +363,67 @@ def setup_desktop_entry(name, config, target_file, target_symlink):
             subprocess.run(["update-desktop-database", apps_dir], capture_output=True)
         except Exception:
             pass
+
+    # Make this app the default handler for its URL schemes (e.g. obsidian://).
+    # File types are only advertised ("Open with"), never claimed as default.
+    schemes = [m for m in mime_type_list(config) if m.startswith("x-scheme-handler/")]
+    if schemes and shutil.which("xdg-mime"):
+        desktop_id = os.path.basename(desktop_file)
+        for scheme in schemes:
+            res = subprocess.run(["xdg-mime", "default", desktop_id, scheme], capture_output=True)
+            if res.returncode == 0:
+                print(f"[appimage:{name}] Set default handler for {scheme}: {desktop_id}")
+
+
+def mime_type_list(config):
+    mime_types = config.get("desktop_mime_types", [])
+    if isinstance(mime_types, str):
+        mime_types = [m for m in mime_types.split(";") if m]
+    return list(mime_types)
+
+
+def desktop_entry_fields(name, config, target_symlink):
+    """Every desktop entry key we write except Icon (which depends on extraction)."""
+    cmd_name = config.get("command", name)
+    desktop_name = config.get("desktop_name", name.capitalize())
+    mime_types = mime_type_list(config)
+    # %U accepts both file paths and URLs, needed for scheme handlers like obsidian://
+    exec_field = "%U" if any(m.startswith("x-scheme-handler/") for m in mime_types) else "%F"
+
+    fields = {
+        "Type": "Application",
+        "Name": desktop_name,
+        "Comment": config.get("desktop_comment", f"{desktop_name} Application"),
+        "Exec": f"{target_symlink} {exec_field}",
+        "Terminal": "true" if config.get("desktop_terminal", False) else "false",
+        "Categories": config.get("desktop_categories", "Utility;"),
+    }
+    if config.get("app_id"):
+        # Lets the compositor match the running window (Wayland app_id / X11 WM_CLASS)
+        # to this entry, for taskbar icons and pinning.
+        fields["StartupWMClass"] = config["app_id"]
+    if mime_types:
+        fields["MimeType"] = ";".join(mime_types) + ";"
+    return fields
+
+
+def desktop_entry_stale(desktop_file, expected_fields):
+    """True if the entry is missing, its Icon file is gone, or any key differs from the manifest."""
+    if not os.path.exists(desktop_file):
+        return True
+    try:
+        with open(desktop_file, "r", encoding="utf-8") as f:
+            current = dict(
+                line.rstrip("\n").split("=", 1) for line in f if "=" in line and not line.startswith("#")
+            )
+    except Exception:
+        return True
+    if not os.path.isfile(current.get("Icon", "")):
+        return True
+    expected_keys = set(expected_fields) | {"Icon"}
+    if set(current) - expected_keys:
+        return True
+    return any(current.get(k) != v for k, v in expected_fields.items())
 
 
 def resolve_github_release(name, config, headers, tag_label):
@@ -464,16 +519,10 @@ def link_launcher(executable_file, target_symlink, exec_args):
     os.replace(temp_path, target_symlink)
 
 
-def desktop_icon_exists(desktop_file):
-    """True if the entry's Icon= is an existing file (as written by setup_desktop_entry)."""
-    try:
-        with open(desktop_file, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.startswith("Icon="):
-                    return os.path.isfile(line[len("Icon="):].strip())
-    except Exception:
-        pass
-    return False
+def desktop_file_path(cmd_name, config):
+    """Desktop entries are named after the window's app_id when known, so compositors can match them."""
+    file_id = config.get("app_id") or cmd_name
+    return os.path.join(os.path.expanduser("~/.local/share/applications"), f"{file_id}.desktop")
 
 
 def install_release_tool(name, config, force=False, update=False):
@@ -545,8 +594,8 @@ def install_release_tool(name, config, force=False, update=False):
             print(f"[{tag_label}:{name}] '{cmd_name}'{ver_str} is already installed ({loc}). Skipping.")
             # Ensure desktop entry exists if requested
             if config.get("desktop_entry", False) and os.path.exists(target_symlink):
-                desktop_file = os.path.expanduser(f"~/.local/share/applications/{cmd_name}.desktop")
-                if not os.path.exists(desktop_file) or not desktop_icon_exists(desktop_file):
+                desktop_file = desktop_file_path(cmd_name, config)
+                if desktop_entry_stale(desktop_file, desktop_entry_fields(name, config, target_symlink)):
                     real_bin = os.path.realpath(target_symlink)
                     if not os.path.islink(target_symlink):
                         # Wrapper script (exec_args): find the AppImage it launches
