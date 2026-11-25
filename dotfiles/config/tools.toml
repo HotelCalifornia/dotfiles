@@ -111,10 +111,11 @@ command = "jetbrains-toolbox"
 # Tarball is a full app tree (bundled JRE + libs), not a single binary
 extract = "full"
 binary_path = "bin/jetbrains-toolbox"
-# After first launch Toolbox installs and updates itself here, and creates
-# its own desktop entry and autostart, so this installer only bootstraps it.
-installed_paths = ["~/.local/share/JetBrains/Toolbox/bin/jetbrains-toolbox"]
-post_install_note = "run 'jetbrains-toolbox' once; it then installs and updates itself under ~/.local/share/JetBrains/Toolbox"
+# Toolbox runs from wherever it is unpacked; on first launch it points its own
+# desktop entry and autostart at that copy and updates itself from then on,
+# so this installer only bootstraps it and never touches an existing copy.
+installed_paths = ["~/.local/share/jetbrains-toolbox/*/bin/jetbrains-toolbox"]
+post_install_note = "run 'jetbrains-toolbox' once to create its app-menu entry; it updates itself from then on"
 brew_cask = "jetbrains-toolbox"
 app_bundle = "/Applications/JetBrains Toolbox.app"
 skip_wsl = true

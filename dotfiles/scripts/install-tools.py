@@ -9,6 +9,7 @@ Supports:
 """
 
 import argparse
+import glob
 import json
 import os
 import platform
@@ -489,9 +490,9 @@ def install_release_tool(name, config, force=False, update=False):
     # Tools that manage their own updates once installed (e.g. JetBrains Toolbox)
     if system == "Linux":
         for path in config.get("installed_paths", []):
-            expanded = os.path.expanduser(path)
-            if os.path.exists(expanded) and not force:
-                print(f"[{tag_label}:{name}] '{cmd_name}' is installed and self-managed ({expanded}). Skipping.")
+            matches = sorted(glob.glob(os.path.expanduser(path)))
+            if matches and not force:
+                print(f"[{tag_label}:{name}] '{cmd_name}' is installed and self-managed ({matches[-1]}). Skipping.")
                 return True
 
     existing_bin = shutil.which(cmd_name)
@@ -618,10 +619,13 @@ def install_release_tool(name, config, force=False, update=False):
             if not os.path.isfile(executable_file):
                 print(f"[{tag_label}:{name}] Error: '{executable_file}' not found after extraction", file=sys.stderr)
                 return False
-            stale_dirs = [
-                os.path.join(app_dir, d) for d in os.listdir(app_dir)
-                if d != latest_tag and os.path.isdir(os.path.join(app_dir, d))
-            ]
+            # Self-managed apps run from (and point their own launchers at) the
+            # directory they were unpacked to, so never delete older copies of those.
+            if not config.get("installed_paths"):
+                stale_dirs = [
+                    os.path.join(app_dir, d) for d in os.listdir(app_dir)
+                    if d != latest_tag and os.path.isdir(os.path.join(app_dir, d))
+                ]
         elif is_tarball:
             extracted_bin = os.path.join(app_dir, bin_name)
             try:

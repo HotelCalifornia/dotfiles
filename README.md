@@ -70,7 +70,7 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | **`claude`** | Claude Code | Includes `ai`; symlinks `~/.claude/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
 | **`wayland`** | Display server mixin | Deploys `~/.config/wezterm/mixins/wayland.lua` (`enable_wayland = false`). |
 | **`rclone`** | Google Drive mount (Linux) | Installs `rclone` (GitHub release), deploys `~/.config/systemd/user/rclone-gdrive.service` mounting remote `gdrive:` at `~/GoogleDrive`. Also deploys `rclone-shared.service`, mounting a `combine` remote `shared:` (one subfolder per shared drive, reusing the `gdrive` login) at `~/SharedDrives`. One-time setup: `rclone config create gdrive drive scope=drive`; list shared drives with `rclone backend drives gdrive:` and add `[shared]` with `type = combine` and `upstreams = "Name=gdrive,team_drive=<ID>:" ...` to `rclone.conf`; then `systemctl --user enable --now rclone-gdrive rclone-shared`. |
-| **`apps`** | Desktop applications | Installs Obsidian (AppImage, launched with `--no-sandbox` because Electron's sandbox fails where unprivileged user namespaces are restricted) and JetBrains Toolbox (bootstrap tarball; run `jetbrains-toolbox` once and it installs and updates itself under `~/.local/share/JetBrains/Toolbox`). Homebrew casks on macOS. |
+| **`apps`** | Desktop applications | Installs Obsidian (AppImage, launched with `--no-sandbox` because Electron's sandbox fails where unprivileged user namespaces are restricted) and JetBrains Toolbox (bootstrap tarball unpacked to `~/.local/share/jetbrains-toolbox/<version>/`; run `jetbrains-toolbox` once to create its app-menu entry and autostart, after which it updates itself and the installer leaves it alone). Homebrew casks on macOS. |
 | **`git`** | Git config & identities | Shared `~/.gitconfig`; identities are set up per machine by `init-profile.py`, see [Git Identities](#git-identities). |
 | **`hotel-laptop-2.local`** | Primary workstation | Includes `[wezterm, neovim, user, gemini, git]`. |
 
@@ -98,7 +98,7 @@ CLI tools and application binaries are declared centrally in [`dotfiles/config/t
    - Supports `skip_wsl = true` to prevent installing GUI AppImages inside headless WSL environments.
    - Supports `source = "jetbrains"` with `product_code` to resolve downloads from the JetBrains releases API instead of GitHub (e.g., `jetbrains-toolbox`).
    - Supports `extract = "full"` with `binary_path` for archives that ship a whole app tree, unpacked to `~/.local/share/<app>/<version>/`.
-   - Supports `exec_args` (installs a wrapper script instead of a symlink), `installed_paths` (skip tools that self-manage once installed), and `post_install_note`.
+   - Supports `exec_args` (installs a wrapper script instead of a symlink), `installed_paths` (glob patterns; skip tools that self-manage once installed, and never delete their older unpacked copies), and `post_install_note`.
    - Desktop entries are regenerated when the icon they reference is missing.
 
 ### Tool CLI Usage
