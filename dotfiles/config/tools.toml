@@ -81,6 +81,44 @@ brew = "glow"
 manager = "uv"
 group = "user"
 
+# --- Desktop Applications ---
+[tools.obsidian]
+manager = "github-release"
+group = "apps"
+command = "obsidian"
+repo = "obsidianmd/obsidian-releases"
+# x86_64 AppImage has no arch suffix; arm64 is "-arm64"
+asset = "^Obsidian-[0-9.]+{arch}\\.AppImage$"
+arch_map = { x86_64 = "", arm64 = "-arm64" }
+# Electron's sandbox fails where unprivileged user namespaces are restricted
+# (kernel.apparmor_restrict_unprivileged_userns = 1, Ubuntu 24.04+)
+exec_args = ["--no-sandbox"]
+brew_cask = "obsidian"
+app_bundle = "/Applications/Obsidian.app"
+skip_wsl = true
+desktop_entry = true
+desktop_name = "Obsidian"
+desktop_comment = "Knowledge base and note-taking on local Markdown files"
+desktop_categories = "Office;TextEditor;"
+icon_name = "obsidian"
+
+[tools.jetbrains-toolbox]
+manager = "github-release"
+source = "jetbrains"
+product_code = "TBA"
+group = "apps"
+command = "jetbrains-toolbox"
+# Tarball is a full app tree (bundled JRE + libs), not a single binary
+extract = "full"
+binary_path = "bin/jetbrains-toolbox"
+# After first launch Toolbox installs and updates itself here, and creates
+# its own desktop entry and autostart, so this installer only bootstraps it.
+installed_paths = ["~/.local/share/JetBrains/Toolbox/bin/jetbrains-toolbox"]
+post_install_note = "run 'jetbrains-toolbox' once; it then installs and updates itself under ~/.local/share/JetBrains/Toolbox"
+brew_cask = "jetbrains-toolbox"
+app_bundle = "/Applications/JetBrains Toolbox.app"
+skip_wsl = true
+
 # --- Cloud Storage ---
 [tools.rclone]
 manager = "github-release"

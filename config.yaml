@@ -126,6 +126,7 @@ actions:
   install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
   install_user_tools: ~/.local/bin/install-tools.py --group user
   install_rclone: ~/.local/bin/install-tools.py --group rclone
+  install_apps: ~/.local/bin/install-tools.py --group apps
   setup_rclone_mount: mkdir -p ~/GoogleDrive ~/SharedDrives ~/.cache/rclone && systemctl --user daemon-reload
   link_agents_skills: ~/.local/bin/link-agent-skills.sh opencode
   link_gemini_skills: ~/.local/bin/link-agent-skills.sh gemini
@@ -226,6 +227,13 @@ profiles:
       - install_rclone
       - setup_rclone_mount
 
+  apps:
+    dotfiles:
+      - f_tools.toml
+      - f_install_tools
+    actions:
+      - install_apps
+
   bose:
     include: [bash, neovim]
     dotfiles:
@@ -250,4 +258,4 @@ profiles:
       - f_vcpkg.sh
 
   rise-33:
-    include: [wezterm, neovim, user, wayland, claude, git, rclone]
+    include: [wezterm, neovim, user, wayland, claude, git, rclone, apps]

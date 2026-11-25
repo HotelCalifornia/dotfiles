@@ -13,6 +13,7 @@ import json
 import os
 import platform
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -300,6 +301,7 @@ def setup_desktop_entry(name, config, target_file, target_symlink):
     app_dir = os.path.dirname(target_file)
 
     # Attempt to extract icon from the AppImage
+    squash_dir = os.path.join(app_dir, "squashfs-root")
     try:
         extract_res = subprocess.run(
             [target_file, "--appimage-extract", "*.png"],
@@ -307,22 +309,40 @@ def setup_desktop_entry(name, config, target_file, target_symlink):
             capture_output=True,
             timeout=10,
         )
-        if extract_res.returncode == 0:
-            squash_dir = os.path.join(app_dir, "squashfs-root")
-            if os.path.isdir(squash_dir):
-                for root, _, files in os.walk(squash_dir):
-                    for f in files:
-                        if f.endswith(".png"):
-                            src_icon = os.path.join(root, f)
-                            dst_icon = os.path.join(icons_dir, f"{icon_name}.png")
-                            shutil.copy2(src_icon, dst_icon)
-                            extracted_icon_path = dst_icon
-                            break
-                    if extracted_icon_path:
-                        break
-                shutil.rmtree(squash_dir, ignore_errors=True)
+        if extract_res.returncode == 0 and os.path.isdir(squash_dir):
+            # The root icon is often a symlink into usr/share/icons that the "*.png"
+            # pattern doesn't extract; pull in those targets as well.
+            for f in os.listdir(squash_dir):
+                path = os.path.join(squash_dir, f)
+                if f.endswith(".png") and os.path.islink(path) and not os.path.exists(path):
+                    link_target = os.path.normpath(os.readlink(path)).lstrip("/")
+                    if not link_target.startswith(".."):
+                        subprocess.run(
+                            [target_file, "--appimage-extract", link_target],
+                            cwd=app_dir,
+                            capture_output=True,
+                            timeout=10,
+                        )
+            # Real files only; prefer one named after the app, then the largest.
+            candidates = []
+            for root, _, files in os.walk(squash_dir):
+                for f in files:
+                    path = os.path.join(root, f)
+                    if f.endswith(".png") and not os.path.islink(path) and os.path.isfile(path):
+                        candidates.append(path)
+            if candidates:
+                preferred = {f"{icon_name}.png", f"{cmd_name}.png", f"{name}.png"}
+                src_icon = max(
+                    candidates,
+                    key=lambda p: (os.path.basename(p).lower() in preferred, os.path.getsize(p)),
+                )
+                dst_icon = os.path.join(icons_dir, f"{icon_name}.png")
+                shutil.copy2(src_icon, dst_icon)
+                extracted_icon_path = dst_icon
     except Exception as e:
         print(f"[appimage:{name}] Notice: icon extraction skipped ({e})", file=sys.stderr)
+    finally:
+        shutil.rmtree(squash_dir, ignore_errors=True)
 
     desktop_file = os.path.join(apps_dir, f"{cmd_name}.desktop")
     icon_value = extracted_icon_path or icon_name
@@ -350,6 +370,111 @@ def setup_desktop_entry(name, config, target_file, target_symlink):
             pass
 
 
+def resolve_github_release(name, config, headers, tag_label):
+    """Return (tag, download_url, asset_filename) for the latest GitHub release, or raise."""
+    repo = config.get("repo")
+    if not repo:
+        raise ValueError("no GitHub 'repo' specified in manifest")
+
+    api_url = f"https://api.github.com/repos/{repo}/releases/latest"
+    gh_headers = dict(headers)
+    gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if gh_token:
+        gh_headers["Authorization"] = f"Bearer {gh_token}"
+
+    req = urllib.request.Request(api_url, headers=gh_headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        release_data = json.loads(resp.read().decode("utf-8"))
+
+    latest_tag = release_data.get("tag_name", "")
+
+    # Resolve asset pattern with architecture replacement
+    raw_pattern = config.get("asset", "")
+    arch = get_system_arch()
+    # Per-tool override for projects that name architectures differently (e.g. amd64)
+    arch = config.get("arch_map", {}).get(arch, arch)
+    resolved_pattern = raw_pattern.replace("{arch}", arch)
+
+    for asset in release_data.get("assets", []):
+        asset_name = asset.get("name", "")
+        if re.search(resolved_pattern, asset_name):
+            return latest_tag, asset.get("browser_download_url"), asset_name
+
+    raise LookupError(f"no release asset matched pattern '{resolved_pattern}' in release {latest_tag}")
+
+
+def resolve_jetbrains_release(name, config, headers, tag_label):
+    """Return (version, download_url, filename) from the JetBrains product releases API, or raise."""
+    code = config.get("product_code")
+    if not code:
+        raise ValueError("no JetBrains 'product_code' specified in manifest")
+
+    api_url = f"https://data.services.jetbrains.com/products/releases?code={code}&latest=true&type=release"
+    req = urllib.request.Request(api_url, headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+
+    releases = data.get(code) or []
+    if not releases:
+        raise LookupError(f"no releases returned for product code '{code}'")
+    release = releases[0]
+
+    platform_key = {"x86_64": "linux", "arm64": "linuxARM64"}.get(get_system_arch())
+    download = (release.get("downloads") or {}).get(platform_key or "")
+    if not download or not download.get("link"):
+        raise LookupError(f"no Linux download for architecture '{get_system_arch()}'")
+
+    link = download["link"]
+    version = release.get("build") or release.get("version") or os.path.basename(link)
+    return version, link, os.path.basename(urlparse(link).path)
+
+
+def extract_full_archive(archive_path, dest_dir):
+    """Extract a whole tar archive into dest_dir, stripping its single top-level directory."""
+    if not hasattr(tarfile, "data_filter"):
+        raise RuntimeError("this Python lacks tarfile extraction filters; upgrade to 3.12+ (or a patched 3.8+)")
+
+    def strip_first_component(member, path):
+        parts = member.name.split("/", 1)
+        if len(parts) < 2 or not parts[1]:
+            return None  # the top-level directory entry itself
+        return tarfile.data_filter(member.replace(name=parts[1], deep=False), path)
+
+    os.makedirs(dest_dir, exist_ok=True)
+    with tarfile.open(archive_path, "r:*") as tar:
+        tar.extractall(dest_dir, filter=strip_first_component)
+
+
+def link_launcher(executable_file, target_symlink, exec_args):
+    """Point ~/.local/bin/<cmd> at the executable, via a wrapper script when extra args are needed."""
+    temp_path = target_symlink + ".tmp"
+    if os.path.islink(temp_path) or os.path.exists(temp_path):
+        os.remove(temp_path)
+
+    if exec_args:
+        if isinstance(exec_args, str):
+            exec_args = exec_args.split()
+        quoted = " ".join(shlex.quote(a) for a in exec_args)
+        with open(temp_path, "w", encoding="utf-8") as f:
+            f.write(f'#!/bin/sh\nexec {shlex.quote(executable_file)} {quoted} "$@"\n')
+        os.chmod(temp_path, 0o755)
+    else:
+        os.symlink(executable_file, temp_path)
+    os.replace(temp_path, target_symlink)
+
+
+def desktop_icon_exists(desktop_file):
+    """True if the entry's Icon= is an existing file (as written by setup_desktop_entry)."""
+    try:
+        with open(desktop_file, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("Icon="):
+                    return os.path.isfile(line[len("Icon="):].strip())
+    except Exception:
+        pass
+    return False
+
+
 def install_release_tool(name, config, force=False, update=False):
     system = platform.system()
     cmd_name = config.get("command", name)
@@ -360,6 +485,14 @@ def install_release_tool(name, config, force=False, update=False):
     if is_wsl() and config.get("skip_wsl", False):
         print(f"[{tag_label}:{name}] Running inside WSL: skipping '{cmd_name}' installation.")
         return True
+
+    # Tools that manage their own updates once installed (e.g. JetBrains Toolbox)
+    if system == "Linux":
+        for path in config.get("installed_paths", []):
+            expanded = os.path.expanduser(path)
+            if os.path.exists(expanded) and not force:
+                print(f"[{tag_label}:{name}] '{cmd_name}' is installed and self-managed ({expanded}). Skipping.")
+                return True
 
     existing_bin = shutil.which(cmd_name)
 
@@ -412,61 +545,42 @@ def install_release_tool(name, config, force=False, update=False):
             # Ensure desktop entry exists if requested
             if config.get("desktop_entry", False) and os.path.exists(target_symlink):
                 desktop_file = os.path.expanduser(f"~/.local/share/applications/{cmd_name}.desktop")
-                if not os.path.exists(desktop_file):
+                if not os.path.exists(desktop_file) or not desktop_icon_exists(desktop_file):
                     real_bin = os.path.realpath(target_symlink)
+                    if not os.path.islink(target_symlink):
+                        # Wrapper script (exec_args): find the AppImage it launches
+                        appimages = [
+                            os.path.join(app_dir, f) for f in os.listdir(app_dir)
+                            if f.lower().endswith(".appimage")
+                        ] if os.path.isdir(app_dir) else []
+                        real_bin = appimages[0] if appimages else real_bin
                     setup_desktop_entry(name, config, real_bin, target_symlink)
             return True
 
-        repo = config.get("repo")
-        if not repo:
-            print(f"[{tag_label}:{name}] Error: no GitHub 'repo' specified in manifest.", file=sys.stderr)
-            return False
-
-        api_url = f"https://api.github.com/repos/{repo}/releases/latest"
         headers = {"User-Agent": "dotfiles-tool-installer"}
-        gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-        if gh_token:
-            headers["Authorization"] = f"Bearer {gh_token}"
-
-        req = urllib.request.Request(api_url, headers=headers)
-        try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                release_data = json.loads(resp.read().decode("utf-8"))
-        except Exception as e:
-            if is_installed and not force:
-                print(f"[{tag_label}:{name}] Warning: GitHub API check failed ({e}); keeping existing installation.")
-                return True
-            print(f"[{tag_label}:{name}] Error fetching release metadata from {api_url}: {e}", file=sys.stderr)
+        source = config.get("source", "github")
+        resolvers = {"github": resolve_github_release, "jetbrains": resolve_jetbrains_release}
+        resolver = resolvers.get(source)
+        if not resolver:
+            print(f"[{tag_label}:{name}] Error: unknown release source '{source}'.", file=sys.stderr)
             return False
 
-        latest_tag = release_data.get("tag_name", "")
+        try:
+            latest_tag, download_url, asset_filename = resolver(name, config, headers, tag_label)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+            if is_installed and not force:
+                print(f"[{tag_label}:{name}] Warning: {source} release check failed ({e}); keeping existing installation.")
+                return True
+            print(f"[{tag_label}:{name}] Error fetching {source} release metadata: {e}", file=sys.stderr)
+            return False
+        except (ValueError, LookupError) as e:
+            print(f"[{tag_label}:{name}] Error: {e}", file=sys.stderr)
+            return False
+
         if current_version and current_version == latest_tag and not force:
             print(f"[{tag_label}:{name}] '{cmd_name}' is already up-to-date ({latest_tag}).")
             return True
 
-        # Resolve asset pattern with architecture replacement
-        raw_pattern = config.get("asset", "")
-        arch = get_system_arch()
-        # Per-tool override for projects that name architectures differently (e.g. amd64)
-        arch = config.get("arch_map", {}).get(arch, arch)
-        resolved_pattern = raw_pattern.replace("{arch}", arch)
-
-        matching_asset = None
-        for asset in release_data.get("assets", []):
-            asset_name = asset.get("name", "")
-            if re.search(resolved_pattern, asset_name):
-                matching_asset = asset
-                break
-
-        if not matching_asset:
-            print(
-                f"[{tag_label}:{name}] Error: no release asset matched pattern '{resolved_pattern}' in release {latest_tag}.",
-                file=sys.stderr,
-            )
-            return False
-
-        download_url = matching_asset.get("browser_download_url")
-        asset_filename = matching_asset.get("name")
         os.makedirs(app_dir, exist_ok=True)
         os.makedirs(bin_dir, exist_ok=True)
 
@@ -482,8 +596,33 @@ def install_release_tool(name, config, force=False, update=False):
             return False
 
         executable_file = target_file
+        is_tarball = target_file.endswith((".tar.gz", ".tgz", ".tar.xz", ".tar.bz2", ".tar"))
+        stale_dirs = []
         # Handle archive extraction (tar / zip)
-        if target_file.endswith((".tar.gz", ".tgz", ".tar.xz", ".tar.bz2", ".tar")):
+        if config.get("extract") == "full":
+            # Apps that ship as a whole directory tree (binary + bundled libs)
+            if not is_tarball:
+                print(f"[{tag_label}:{name}] Error: extract = \"full\" needs a tar archive, got {asset_filename}", file=sys.stderr)
+                return False
+            install_dir = os.path.join(app_dir, latest_tag)
+            if os.path.isdir(install_dir):
+                shutil.rmtree(install_dir)
+            try:
+                extract_full_archive(target_file, install_dir)
+            except Exception as e:
+                print(f"[{tag_label}:{name}] Error extracting tar archive: {e}", file=sys.stderr)
+                return False
+            finally:
+                os.remove(target_file)
+            executable_file = os.path.join(install_dir, config.get("binary_path", bin_name))
+            if not os.path.isfile(executable_file):
+                print(f"[{tag_label}:{name}] Error: '{executable_file}' not found after extraction", file=sys.stderr)
+                return False
+            stale_dirs = [
+                os.path.join(app_dir, d) for d in os.listdir(app_dir)
+                if d != latest_tag and os.path.isdir(os.path.join(app_dir, d))
+            ]
+        elif is_tarball:
             extracted_bin = os.path.join(app_dir, bin_name)
             try:
                 with tarfile.open(target_file, "r:*") as tar:
@@ -522,17 +661,18 @@ def install_release_tool(name, config, force=False, update=False):
 
         os.chmod(executable_file, 0o755)
 
-        # Update symlink atomically
-        temp_symlink = target_symlink + ".tmp"
-        if os.path.islink(temp_symlink) or os.path.exists(temp_symlink):
-            os.remove(temp_symlink)
-        os.symlink(executable_file, temp_symlink)
-        os.replace(temp_symlink, target_symlink)
+        # Update launcher (symlink, or wrapper script if exec_args is set) atomically
+        link_launcher(executable_file, target_symlink, config.get("exec_args"))
 
         with open(version_file, "w", encoding="utf-8") as f:
             f.write(latest_tag + "\n")
 
+        for d in stale_dirs:
+            shutil.rmtree(d, ignore_errors=True)
+
         print(f"[{tag_label}:{name}] Successfully installed {latest_tag} to {target_symlink}")
+        if config.get("post_install_note"):
+            print(f"[{tag_label}:{name}] Note: {config['post_install_note']}")
 
         # Set up desktop entry if requested
         if config.get("desktop_entry", False):
