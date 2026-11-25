@@ -88,6 +88,9 @@ dotfiles:
   d_agents_rules:
     src: config/agents/rules
     dst: ~/.config/agents/rules
+  f_rclone_gdrive.service:
+    src: config/systemd/user/rclone-gdrive.service
+    dst: ~/.config/systemd/user/rclone-gdrive.service
 
 actions:
   persist_dotfiles_dir: bash "{{@@ _dotdrop_dotpath @@}}/scripts/persist-dotfiles-dir.sh" "{{@@ _dotdrop_cfgpath @@}}"
@@ -97,6 +100,8 @@ actions:
   install_wezterm: ~/.local/bin/install-tools.py --group wezterm
   install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
   install_user_tools: ~/.local/bin/install-tools.py --group user
+  install_rclone: ~/.local/bin/install-tools.py --group rclone
+  setup_rclone_mount: mkdir -p ~/GoogleDrive ~/.cache/rclone && systemctl --user daemon-reload
   link_gemini_skills: ~/.local/bin/link-agent-skills.sh gemini
   link_claude_skills: ~/.local/bin/link-agent-skills.sh claude
 
@@ -173,6 +178,15 @@ profiles:
     dotfiles:
       - f_gitconfig
 
+  rclone:
+    dotfiles:
+      - f_tools.toml
+      - f_install_tools
+      - f_rclone_gdrive.service
+    actions:
+      - install_rclone
+      - setup_rclone_mount
+
   bose:
     include: [bash, neovim]
     dotfiles:
@@ -197,4 +211,4 @@ profiles:
       - f_vcpkg.sh
 
   rise-33:
-    include: [wezterm, neovim, user, wayland, claude, git]
+    include: [wezterm, neovim, user, wayland, claude, git, rclone]

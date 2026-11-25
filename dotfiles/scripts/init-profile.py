@@ -47,6 +47,7 @@ STANDARD_MIXINS = [
     ("wsl", "WSL environment (includes bash, neovim, user; configures Windows Terminal)"),
     ("wayland", "Wayland display server mixin (wayland.lua)"),
     ("git", "Git config + machine-local identities (set up interactively next)"),
+    ("rclone", "rclone + systemd user unit mounting Google Drive at ~/GoogleDrive (Linux)"),
 ]
 
 AVAILABLE_AGENTS = [

@@ -80,3 +80,13 @@ brew = "glow"
 [tools.termaid]
 manager = "uv"
 group = "user"
+
+# --- Cloud Storage ---
+[tools.rclone]
+manager = "github-release"
+group = "rclone"
+command = "rclone"
+repo = "rclone/rclone"
+asset = "rclone-v[0-9.]+-linux-{arch}\\.zip$"
+arch_map = { x86_64 = "amd64", arm64 = "arm64" }
+brew = "rclone"

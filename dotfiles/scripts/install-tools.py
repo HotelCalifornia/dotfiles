@@ -447,6 +447,8 @@ def install_release_tool(name, config, force=False, update=False):
         # Resolve asset pattern with architecture replacement
         raw_pattern = config.get("asset", "")
         arch = get_system_arch()
+        # Per-tool override for projects that name architectures differently (e.g. amd64)
+        arch = config.get("arch_map", {}).get(arch, arch)
         resolved_pattern = raw_pattern.replace("{arch}", arch)
 
         matching_asset = None

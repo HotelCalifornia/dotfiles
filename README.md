@@ -68,6 +68,7 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | **`gemini`** | Antigravity / Gemini CLI | Symlinks `~/.gemini/config/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
 | **`claude`** | Claude Code | Symlinks `~/.claude/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
 | **`wayland`** | Display server mixin | Deploys `~/.config/wezterm/mixins/wayland.lua` (`enable_wayland = false`). |
+| **`rclone`** | Google Drive mount (Linux) | Installs `rclone` (GitHub release), deploys `~/.config/systemd/user/rclone-gdrive.service` mounting remote `gdrive:` at `~/GoogleDrive`. One-time setup: `rclone config create gdrive drive scope=drive`, then `systemctl --user enable --now rclone-gdrive`. |
 | **`git`** | Git config & identities | Shared `~/.gitconfig`; identities are set up per machine by `init-profile.py`, see [Git Identities](#git-identities). |
 | **`hotel-laptop-2.local`** | Primary workstation | Includes `[wezterm, neovim, user, gemini]`. |
 
