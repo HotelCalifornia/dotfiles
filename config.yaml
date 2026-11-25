@@ -131,6 +131,7 @@ actions:
   install_user_tools: ~/.local/bin/install-tools.py --group user
   install_rclone: ~/.local/bin/install-tools.py --group rclone
   install_apps: ~/.local/bin/install-tools.py --group apps
+  install_git_tools: ~/.local/bin/install-tools.py --group git
   setup_rclone_mount: mkdir -p ~/GoogleDrive ~/SharedDrives ~/.cache/rclone && systemctl --user daemon-reload
   link_agents_skills: ~/.local/bin/link-agent-skills.sh opencode
   link_gemini_skills: ~/.local/bin/link-agent-skills.sh gemini
@@ -221,6 +222,10 @@ profiles:
   git:
     dotfiles:
       - f_gitconfig
+      - f_tools.toml
+      - f_install_tools
+    actions:
+      - install_git_tools
 
   rclone:
     dotfiles:

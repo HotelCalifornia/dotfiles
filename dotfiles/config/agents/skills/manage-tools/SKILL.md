@@ -22,6 +22,7 @@ call the installer per group:
 | `install_neovim_tools` | `neovim` |
 | `install_user_tools` | `user` |
 | `install_rclone` | `rclone` |
+| `install_git_tools` | `git` (git-lfs) |
 | `install_apps` | `apps` (desktop apps: Obsidian, JetBrains Toolbox) |
 
 **A tool that has no group matching an action is never installed.**

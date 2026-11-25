@@ -133,6 +133,18 @@ brew_cask = "jetbrains-toolbox"
 app_bundle = "/Applications/JetBrains Toolbox.app"
 skip_wsl = true
 
+# --- Git ---
+# ~/.gitconfig (git profile) declares the lfs filter with required = true, so git-lfs
+# must be on PATH. Don't run `git lfs install`: it would rewrite the managed gitconfig.
+[tools.git-lfs]
+manager = "github-release"
+group = "git"
+command = "git-lfs"
+repo = "git-lfs/git-lfs"
+asset = "^git-lfs-linux-{arch}-v[0-9.]+\\.tar\\.gz$"
+arch_map = { x86_64 = "amd64", arm64 = "arm64" }
+brew = "git-lfs"
+
 # --- Cloud Storage ---
 [tools.rclone]
 manager = "github-release"
