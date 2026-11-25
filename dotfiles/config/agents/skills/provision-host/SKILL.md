@@ -101,6 +101,8 @@ See the `git-signing` skill for diagnosis and key work.
 - `rclone` mixin: installs `rclone` and deploys the systemd user units; it does
   not enable them. Follow the `rclone-mounts` skill.
 - `wayland` mixin: deploys the WezTerm Wayland mixin.
+- `apps` mixin: installs Obsidian and JetBrains Toolbox (desktop entries, `obsidian://`
+  handler). Toolbox must be launched once before it appears in app search.
 - WSL: the `wsl` mixin includes `bash, neovim, user`; GUI tools marked
   `skip_wsl` are not installed.
 
