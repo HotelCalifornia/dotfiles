@@ -65,8 +65,9 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | **`wezterm`** | Terminal emulator | Shared `dotfiles.lua` (with mixin loader) plus an unmanaged local `~/.config/wezterm/wezterm.lua` (seeded once; holds machine overrides, so `pokemon` can rewrite it freely), completions, `wezterm` installer, `pokemon-terminal`, `terminal-pane-display` skill. |
 | **`wsl`** | Windows Subsystem for Linux | Includes `[bash, neovim, user]` + `pokemon-terminal` (themes Windows Terminal, skips WezTerm GUI configs). |
 | **`user`** | General CLI utilities | Installs modern Rust/Python/Go CLI tools (`dust`, `eza`, `bat`, `glow`, `termaid`, `ripgrep`). |
-| **`gemini`** | Antigravity / Gemini CLI | Symlinks `~/.gemini/config/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
-| **`claude`** | Claude Code | Symlinks `~/.claude/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
+| **`ai`** | Shared agent assets | Deploys canonical `~/.config/agents/{rules,skills}` and `link-agent-skills.sh`; links `~/.agents/skills` for OpenCode; `gemini` and `claude` build on it. |
+| **`gemini`** | Antigravity / Gemini CLI | Includes `ai`; symlinks `~/.gemini/config/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
+| **`claude`** | Claude Code | Includes `ai`; symlinks `~/.claude/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
 | **`wayland`** | Display server mixin | Deploys `~/.config/wezterm/mixins/wayland.lua` (`enable_wayland = false`). |
 | **`rclone`** | Google Drive mount (Linux) | Installs `rclone` (GitHub release), deploys `~/.config/systemd/user/rclone-gdrive.service` mounting remote `gdrive:` at `~/GoogleDrive`. Also deploys `rclone-shared.service`, mounting a `combine` remote `shared:` (one subfolder per shared drive, reusing the `gdrive` login) at `~/SharedDrives`. One-time setup: `rclone config create gdrive drive scope=drive`; list shared drives with `rclone backend drives gdrive:` and add `[shared]` with `type = combine` and `upstreams = "Name=gdrive,team_drive=<ID>:" ...` to `rclone.conf`; then `systemctl --user enable --now rclone-gdrive rclone-shared`. |
 | **`git`** | Git config & identities | Shared `~/.gitconfig`; identities are set up per machine by `init-profile.py`, see [Git Identities](#git-identities). |
@@ -122,28 +123,53 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 │   ├── git-commit-trailers.md
 │   └── preferred-tools.md
 └── skills/
-    └── terminal-pane-display/
-        ├── SKILL.md
-        └── scripts/
-            ├── display.sh
-            ├── resize_pane.sh
-            └── close_pane.sh
+    ├── author-agent-skill/
+    │   └── SKILL.md
+    ├── dotfiles-maintenance/
+    │   └── SKILL.md
+    ├── git-signing/
+    │   └── SKILL.md
+    ├── manage-tools/
+    │   └── SKILL.md
+    ├── provision-host/
+    │   └── SKILL.md
+    ├── rclone-mounts/
+    │   └── SKILL.md
+    ├── terminal-pane-display/
+    │   ├── SKILL.md
+    │   └── scripts/
+    │       ├── display.sh
+    │       ├── resize_pane.sh
+    │       └── close_pane.sh
+    └── wezterm-local-config/
+        └── SKILL.md
 ```
 
 | Section | Component | Purpose |
 | :--- | :--- | :--- |
 | **`rules/`** | `git-commit-trailers.md` | Attributes AI harness and consulted models in commit trailers |
 | | `preferred-tools.md` | Enforces modern CLI tool preferences |
-| **`skills/`** | `terminal-pane-display/` | Multi-pane auxiliary rendering in WezTerm |
+| **`skills/`** | `author-agent-skill/` | Add or wire a skill/rule; frontmatter, dotdrop entry, harness linking |
+| | `dotfiles-maintenance/` | Safe dotdrop workflow: edit sources, check profiles, install, verify |
+| | `git-signing/` | Git identity, GPG/SSH signing, GitHub keys, pinentry troubleshooting |
+| | `manage-tools/` | Add/upgrade tools via `tools.toml` and `install-tools.py` |
+| | `provision-host/` | Host profiles, presets, mixins, first install |
+| | `rclone-mounts/` | Linux Google Drive and shared-drive mounts via systemd user units |
+| | `terminal-pane-display/` | Multi-pane auxiliary rendering in WezTerm |
+| | `wezterm-local-config/` | Managed vs machine-local WezTerm config, Pokémon backgrounds |
 
-- When the `gemini` and `claude` profiles are active, dotdrop establishes symlinks:
+The `ai` mixin owns the canonical rules, the harness-agnostic skills, and `link-agent-skills.sh`. `gemini` and `claude` include it and only add their harness symlinks. Tool-specific skills follow their tool: `wezterm` deploys the two WezTerm skills, and `rclone` deploys `rclone-mounts`.
+
+- When the `ai` mixin is active, dotdrop links the vendor-neutral source used by OpenCode:
+  - `~/.agents/skills` $\rightarrow$ `~/.config/agents/skills`
+- When the `gemini` and `claude` profiles are active, dotdrop adds their harness symlinks:
   - **Gemini / Antigravity**:
     - `~/.gemini/config/skills` $\rightarrow$ `~/.config/agents/skills`
     - `~/.gemini/config/rules` $\rightarrow$ `~/.config/agents/rules`
   - **Claude Code**:
     - `~/.claude/skills` $\rightarrow$ `~/.config/agents/skills`
     - `~/.claude/rules` $\rightarrow$ `~/.config/agents/rules`
-- Skills and rules authored once under `.config/agents/` are automatically discovered and enforced by both Antigravity and Claude Code. Claude Code supports `.claude/rules/` directly and adheres to `AGENTS.md` standards.
+- Skills and rules authored once under `.config/agents/` are automatically discovered and enforced by Antigravity, Claude Code, and OpenCode. Claude Code supports `.claude/rules/` directly and adheres to `AGENTS.md` standards.
 
 ---
 

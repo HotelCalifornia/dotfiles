@@ -81,6 +81,27 @@ dotfiles:
   d_skill_terminal_pane_display:
     src: config/agents/skills/terminal-pane-display
     dst: ~/.config/agents/skills/terminal-pane-display
+  d_skill_dotfiles_maintenance:
+    src: config/agents/skills/dotfiles-maintenance
+    dst: ~/.config/agents/skills/dotfiles-maintenance
+  d_skill_git_signing:
+    src: config/agents/skills/git-signing
+    dst: ~/.config/agents/skills/git-signing
+  d_skill_manage_tools:
+    src: config/agents/skills/manage-tools
+    dst: ~/.config/agents/skills/manage-tools
+  d_skill_provision_host:
+    src: config/agents/skills/provision-host
+    dst: ~/.config/agents/skills/provision-host
+  d_skill_author_agent_skill:
+    src: config/agents/skills/author-agent-skill
+    dst: ~/.config/agents/skills/author-agent-skill
+  d_skill_wezterm_local_config:
+    src: config/agents/skills/wezterm-local-config
+    dst: ~/.config/agents/skills/wezterm-local-config
+  d_skill_rclone_mounts:
+    src: config/agents/skills/rclone-mounts
+    dst: ~/.config/agents/skills/rclone-mounts
   f_link_agent_skills:
     src: scripts/link-agent-skills.sh
     dst: ~/.local/bin/link-agent-skills.sh
@@ -106,6 +127,7 @@ actions:
   install_user_tools: ~/.local/bin/install-tools.py --group user
   install_rclone: ~/.local/bin/install-tools.py --group rclone
   setup_rclone_mount: mkdir -p ~/GoogleDrive ~/SharedDrives ~/.cache/rclone && systemctl --user daemon-reload
+  link_agents_skills: ~/.local/bin/link-agent-skills.sh opencode
   link_gemini_skills: ~/.local/bin/link-agent-skills.sh gemini
   link_claude_skills: ~/.local/bin/link-agent-skills.sh claude
 
@@ -142,6 +164,7 @@ profiles:
       - f_wezterm.sh
       - f_wezterm-completion
       - d_skill_terminal_pane_display
+      - d_skill_wezterm_local_config
     actions:
       - seed_wezterm_local
       - install_wezterm
@@ -158,20 +181,29 @@ profiles:
       - f_tools.toml
       - f_install_tools
       - f_init_profile
-      - d_agents_rules
     actions:
       - ensure_toolchains
       - install_user_tools
 
-  gemini:
+  ai:
     dotfiles:
+      - d_agents_rules
+      - d_skill_dotfiles_maintenance
+      - d_skill_git_signing
+      - d_skill_manage_tools
+      - d_skill_provision_host
+      - d_skill_author_agent_skill
       - f_link_agent_skills
+    actions:
+      - link_agents_skills
+
+  gemini:
+    include: [ai]
     actions:
       - link_gemini_skills
 
   claude:
-    dotfiles:
-      - f_link_agent_skills
+    include: [ai]
     actions:
       - link_claude_skills
 
@@ -189,6 +221,7 @@ profiles:
       - f_install_tools
       - f_rclone_gdrive.service
       - f_rclone_shared.service
+      - d_skill_rclone_mounts
     actions:
       - install_rclone
       - setup_rclone_mount

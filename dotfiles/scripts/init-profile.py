@@ -42,7 +42,7 @@ except ImportError:
 STANDARD_MIXINS = [
     ("wezterm", "WezTerm GUI, completions, Pokemon-terminal, terminal-pane-display (includes bash)"),
     ("neovim", "Neovim editor environment, init.lua, plugins (nvim release)"),
-    ("user", "Modern CLI tools (rg, bat, eza, dust, glow, termaid), rules & tools.toml"),
+    ("user", "Modern CLI tools (rg, bat, eza, dust, glow, termaid) & tools.toml"),
     ("bash", "Core shell & Powerline prompt (standalone; automatically included by wezterm)"),
     ("wsl", "WSL environment (includes bash, neovim, user; configures Windows Terminal)"),
     ("wayland", "Wayland display server mixin (wayland.lua)"),
@@ -51,8 +51,8 @@ STANDARD_MIXINS = [
 ]
 
 AVAILABLE_AGENTS = [
-    ("gemini", "Antigravity / Gemini CLI", "Symlinks ~/.gemini/config/{skills,rules}"),
-    ("claude", "Claude Code", "Symlinks ~/.claude/{skills,rules}"),
+    ("gemini", "Antigravity / Gemini CLI", "Symlinks ~/.gemini/config/{skills,rules} (includes ai)"),
+    ("claude", "Claude Code", "Symlinks ~/.claude/{skills,rules} (includes ai)"),
 ]
 
 PRESETS = {

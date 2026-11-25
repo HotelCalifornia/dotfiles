@@ -28,8 +28,12 @@ case "$AGENT" in
     link_path "$SKILLS_SRC" "${HOME}/.claude/skills"
     link_path "$RULES_SRC" "${HOME}/.claude/rules"
     ;;
+  opencode)
+    # OpenCode reads the vendor-neutral ~/.agents/skills compatibility source.
+    link_path "$SKILLS_SRC" "${HOME}/.agents/skills"
+    ;;
   *)
-    echo "Usage: $0 {gemini|claude}" >&2
+    echo "Usage: $0 {gemini|claude|opencode}" >&2
     exit 1
     ;;
 esac
