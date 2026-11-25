@@ -102,6 +102,13 @@ dotfiles:
   d_skill_rclone_mounts:
     src: config/agents/skills/rclone-mounts
     dst: ~/.config/agents/skills/rclone-mounts
+  d_skill_jbcontext_search:
+    src: config/agents/skills/jbcontext-search
+    dst: ~/.config/agents/skills/jbcontext-search
+  f_ensure_jbcontext:
+    src: scripts/ensure-jbcontext.sh
+    dst: ~/.local/bin/ensure-jbcontext.sh
+    chmod: '755'
   f_link_agent_skills:
     src: scripts/link-agent-skills.sh
     dst: ~/.local/bin/link-agent-skills.sh
@@ -119,6 +126,7 @@ dotfiles:
 actions:
   persist_dotfiles_dir: bash "{{@@ _dotdrop_dotpath @@}}/scripts/persist-dotfiles-dir.sh" "{{@@ _dotdrop_cfgpath @@}}"
   ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
+  ensure_jbcontext: ~/.local/bin/ensure-jbcontext.sh
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
   install_neovim_tools: ~/.local/bin/install-tools.py --group neovim
   install_wezterm: ~/.local/bin/install-tools.py --group wezterm
@@ -226,6 +234,13 @@ profiles:
       - install_rclone
       - setup_rclone_mount
 
+  jbcontext:
+    dotfiles:
+      - f_ensure_jbcontext
+      - d_skill_jbcontext_search
+    actions:
+      - ensure_jbcontext
+
   bose:
     include: [bash, neovim]
     dotfiles:
@@ -241,7 +256,7 @@ profiles:
       - f_vcpkg.sh
 
   hotel-laptop-2.local:
-    include: [wezterm, neovim, user, gemini, git]
+    include: [wezterm, neovim, user, gemini, git, jbcontext]
     dotfiles:
       - f_most.sh
       - f_1-mac.sh

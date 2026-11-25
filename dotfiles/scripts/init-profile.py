@@ -48,6 +48,7 @@ STANDARD_MIXINS = [
     ("wayland", "Wayland display server mixin (wayland.lua)"),
     ("git", "Git config + machine-local identities (set up interactively next)"),
     ("rclone", "rclone + systemd user unit mounting Google Drive at ~/GoogleDrive and shared drives at ~/SharedDrives (Linux)"),
+    ("jbcontext", "JetBrains Air Context CLI (jbcontext) + semantic search skill (non-CUI hosts only)"),
 ]
 
 AVAILABLE_AGENTS = [
