@@ -57,6 +57,9 @@ dotfiles:
   f_2-direnv.sh:
     src: config/rc/pre/2-direnv.sh
     dst: ~/.config/rc/pre/2-direnv.sh
+  f_3-fnm.sh:
+    src: config/rc/pre/3-fnm.sh
+    dst: ~/.config/rc/pre/3-fnm.sh
   f_wezterm-completion:
     src: config/rc/.wezterm-completion
     dst: ~/.config/rc/.wezterm-completion
@@ -121,6 +124,7 @@ actions:
   ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
   install_neovim_tools: ~/.local/bin/install-tools.py --group neovim
+  ensure_node: ~/.cargo/bin/fnm install --lts && ~/.cargo/bin/fnm default lts-latest
   install_wezterm: ~/.local/bin/install-tools.py --group wezterm
   seed_wezterm_local: bash "{{@@ _dotdrop_dotpath @@}}/scripts/seed-wezterm-local.sh"
   install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
@@ -154,9 +158,11 @@ profiles:
       - f_ensure_toolchains
       - f_tools.toml
       - f_install_tools
+      - f_3-fnm.sh
     actions:
       - ensure_toolchains
       - install_neovim_tools
+      - ensure_node
 
   wezterm:
     include: [bash]

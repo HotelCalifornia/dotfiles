@@ -61,7 +61,7 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | Profile | Purpose | Key Dotfiles & Actions |
 | :--- | :--- | :--- |
 | **`bash`** | Core shell & prompt | Powerline themes, aliases, shell toolchain bootstrap (`powerline-status`), records `$DOTFILES_DIR` for the `dotdrop` alias. |
-| **`neovim`** | Editor environment | `init.lua`, `coc-settings.json`, vim-plug, Neovim release installer. |
+| **`neovim`** | Editor environment | `init.lua`, `coc-settings.json`, vim-plug, Neovim release installer. Node.js for coc via `fnm` (cargo): installs the latest LTS as the default and deploys `~/.config/rc/pre/3-fnm.sh` (`fnm env --use-on-cd`); `init.lua` falls back to fnm's default node when nvim isn't started from a shell. |
 | **`wezterm`** | Terminal emulator | Shared `dotfiles.lua` (with mixin loader) plus an unmanaged local `~/.config/wezterm/wezterm.lua` (seeded once; holds machine overrides, so `pokemon` can rewrite it freely), completions, `wezterm` installer, `pokemon-terminal`, `terminal-pane-display` skill. |
 | **`wsl`** | Windows Subsystem for Linux | Includes `[bash, neovim, user]` + `pokemon-terminal` (themes Windows Terminal, skips WezTerm GUI configs). |
 | **`user`** | General CLI utilities | Installs modern Rust/Python/Go CLI tools (`dust`, `eza`, `bat`, `glow`, `termaid`, `ripgrep`). |

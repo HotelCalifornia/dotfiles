@@ -13,6 +13,25 @@ vim.opt.shiftwidth = 4
 vim.opt.mouse = 'a'
 vim.opt.clipboard = 'unnamedplus'
 
+-- coc.nvim needs node. When nvim isn't started from a shell that ran `fnm env`
+-- (e.g. from the desktop entry), fall back to fnm's default version.
+if vim.fn.executable('node') == 0 then
+    local fnm_dirs = {
+        (vim.env.XDG_DATA_HOME or vim.fn.expand('~/.local/share')) .. '/fnm',
+        vim.fn.expand('~/Library/Application Support/fnm'),
+    }
+    if vim.env.FNM_DIR then
+        table.insert(fnm_dirs, 1, vim.env.FNM_DIR)
+    end
+    for _, dir in ipairs(fnm_dirs) do
+        local node = dir .. '/aliases/default/bin/node'
+        if vim.fn.executable(node) == 1 then
+            vim.g.coc_node_path = node
+            break
+        end
+    end
+end
+
 local Plug = vim.fn['plug#']
 vim.call('plug#begin')
 

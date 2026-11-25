@@ -52,6 +52,12 @@ desktop_terminal = true
 desktop_categories = "Utility;TextEditor;Development;"
 icon_name = "nvim"
 
+# Node.js version manager; coc.nvim needs node. The neovim profile's ensure_node
+# action installs the latest LTS and makes it the default.
+[tools.fnm]
+manager = "cargo"
+group = "neovim"
+
 # --- General CLI Utilities (Cargo, UV, GitHub Release) ---
 [tools.du-dust]
 manager = "cargo"
