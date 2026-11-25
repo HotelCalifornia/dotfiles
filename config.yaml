@@ -101,6 +101,7 @@ actions:
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
   install_neovim_tools: ~/.local/bin/install-tools.py --group neovim
   install_wezterm: ~/.local/bin/install-tools.py --group wezterm
+  seed_wezterm_local: bash "{{@@ _dotdrop_dotpath @@}}/scripts/seed-wezterm-local.sh"
   install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
   install_user_tools: ~/.local/bin/install-tools.py --group user
   install_rclone: ~/.local/bin/install-tools.py --group rclone
@@ -142,6 +143,7 @@ profiles:
       - f_wezterm-completion
       - d_skill_terminal_pane_display
     actions:
+      - seed_wezterm_local
       - install_wezterm
       - install_terminal_tools
 

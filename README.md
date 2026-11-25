@@ -62,7 +62,7 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | :--- | :--- | :--- |
 | **`bash`** | Core shell & prompt | Powerline themes, aliases, shell toolchain bootstrap (`powerline-status`), records `$DOTFILES_DIR` for the `dotdrop` alias. |
 | **`neovim`** | Editor environment | `init.lua`, `coc-settings.json`, vim-plug, Neovim release installer. |
-| **`wezterm`** | Terminal emulator | `wezterm.lua` (with mixin loader), completions, `wezterm` installer, `pokemon-terminal`, `terminal-pane-display` skill. |
+| **`wezterm`** | Terminal emulator | Shared `dotfiles.lua` (with mixin loader) plus an unmanaged local `~/.config/wezterm/wezterm.lua` (seeded once; holds machine overrides, so `pokemon` can rewrite it freely), completions, `wezterm` installer, `pokemon-terminal`, `terminal-pane-display` skill. |
 | **`wsl`** | Windows Subsystem for Linux | Includes `[bash, neovim, user]` + `pokemon-terminal` (themes Windows Terminal, skips WezTerm GUI configs). |
 | **`user`** | General CLI utilities | Installs modern Rust/Python/Go CLI tools (`dust`, `eza`, `bat`, `glow`, `termaid`, `ripgrep`). |
 | **`gemini`** | Antigravity / Gemini CLI | Symlinks `~/.gemini/config/{skills,rules}` $\rightarrow$ `~/.config/agents/`. |
