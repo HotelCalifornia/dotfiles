@@ -1,0 +1,22 @@
+[Unit]
+Description=rclone mount: Google shared drives (shared:) -> ~/SharedDrives
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=notify
+ExecStart=%h/.local/bin/rclone mount shared: %h/SharedDrives \
+  --vfs-cache-mode full \
+  --vfs-cache-max-size 10G \
+  --vfs-cache-max-age 24h \
+  --dir-cache-time 5m \
+  --poll-interval 1m \
+  --drive-export-formats docx,xlsx,pptx,svg \
+  --log-level INFO \
+  --log-file %h/.cache/rclone/shared-mount.log
+ExecStop=/usr/bin/fusermount3 -uz %h/SharedDrives
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

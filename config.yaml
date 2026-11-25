@@ -91,6 +91,9 @@ dotfiles:
   f_rclone_gdrive.service:
     src: config/systemd/user/rclone-gdrive.service
     dst: ~/.config/systemd/user/rclone-gdrive.service
+  f_rclone_shared.service:
+    src: config/systemd/user/rclone-shared.service
+    dst: ~/.config/systemd/user/rclone-shared.service
 
 actions:
   persist_dotfiles_dir: bash "{{@@ _dotdrop_dotpath @@}}/scripts/persist-dotfiles-dir.sh" "{{@@ _dotdrop_cfgpath @@}}"
@@ -101,7 +104,7 @@ actions:
   install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
   install_user_tools: ~/.local/bin/install-tools.py --group user
   install_rclone: ~/.local/bin/install-tools.py --group rclone
-  setup_rclone_mount: mkdir -p ~/GoogleDrive ~/.cache/rclone && systemctl --user daemon-reload
+  setup_rclone_mount: mkdir -p ~/GoogleDrive ~/SharedDrives ~/.cache/rclone && systemctl --user daemon-reload
   link_gemini_skills: ~/.local/bin/link-agent-skills.sh gemini
   link_claude_skills: ~/.local/bin/link-agent-skills.sh claude
 
@@ -183,6 +186,7 @@ profiles:
       - f_tools.toml
       - f_install_tools
       - f_rclone_gdrive.service
+      - f_rclone_shared.service
     actions:
       - install_rclone
       - setup_rclone_mount
