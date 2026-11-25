@@ -71,8 +71,7 @@ Profiles are decoupled into single-responsibility mixins that can be combined fo
 | **`wayland`** | Display server mixin | Deploys `~/.config/wezterm/mixins/wayland.lua` (`enable_wayland = false`). |
 | **`rclone`** | Google Drive mount (Linux) | Installs `rclone` (GitHub release), deploys `~/.config/systemd/user/rclone-gdrive.service` mounting remote `gdrive:` at `~/GoogleDrive`. Also deploys `rclone-shared.service`, mounting a `combine` remote `shared:` (one subfolder per shared drive, reusing the `gdrive` login) at `~/SharedDrives`. One-time setup: `rclone config create gdrive drive scope=drive`; list shared drives with `rclone backend drives gdrive:` and add `[shared]` with `type = combine` and `upstreams = "Name=gdrive,team_drive=<ID>:" ...` to `rclone.conf`; then `systemctl --user enable --now rclone-gdrive rclone-shared`. |
 | **`git`** | Git config & identities | Shared `~/.gitconfig`; identities are set up per machine by `init-profile.py`, see [Git Identities](#git-identities). |
-| **`jbcontext`** | Semantic code search | Installs `jbcontext` (JetBrains Air Context CLI) and deploys the `jbcontext-search` skill; opt-in for non-CUI hosts only. |
-| **`hotel-laptop-2.local`** | Primary workstation | Includes `[wezterm, neovim, user, gemini, git, jbcontext]`. |
+| **`hotel-laptop-2.local`** | Primary workstation | Includes `[wezterm, neovim, user, gemini, git]`. |
 
 ---
 
@@ -130,8 +129,6 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
     │   └── SKILL.md
     ├── git-signing/
     │   └── SKILL.md
-    ├── jbcontext-search/
-    │   └── SKILL.md
     ├── manage-tools/
     │   └── SKILL.md
     ├── provision-host/
@@ -155,7 +152,6 @@ AI agent skills and rules reside in a canonical, harness-agnostic directory stru
 | **`skills/`** | `author-agent-skill/` | Add or wire a skill/rule; frontmatter, dotdrop entry, harness linking |
 | | `dotfiles-maintenance/` | Safe dotdrop workflow: edit sources, check profiles, install, verify |
 | | `git-signing/` | Git identity, GPG/SSH signing, GitHub keys, pinentry troubleshooting |
-| | `jbcontext-search/` | Semantic code search via `jbcontext` in large, non-restricted repos |
 | | `manage-tools/` | Add/upgrade tools via `tools.toml` and `install-tools.py` |
 | | `provision-host/` | Host profiles, presets, mixins, first install |
 | | `rclone-mounts/` | Linux Google Drive and shared-drive mounts via systemd user units |
