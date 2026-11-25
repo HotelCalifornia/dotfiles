@@ -208,7 +208,7 @@ profiles:
       - f_vcpkg.sh
 
   hotel-laptop-2.local:
-    include: [wezterm, neovim, user, gemini]
+    include: [wezterm, neovim, user, gemini, git]
     dotfiles:
       - f_most.sh
       - f_1-mac.sh

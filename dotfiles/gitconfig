@@ -4,6 +4,19 @@
     # refuse to commit without an explicit identity instead of guessing user@hostname
     useConfigOnly = true
 
+[core]
+    editor = nvim
+    autocrlf = input
+
+[init]
+    defaultBranch = main
+
+[filter "lfs"]
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+    clean = git-lfs clean -- %f
+
 # Default identity + per-remote extra identities for this machine (ignored if missing)
 [include]
     path = ~/.config/git/identities.gitconfig
