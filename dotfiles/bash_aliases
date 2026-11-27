@@ -18,6 +18,13 @@ if command -v uv >/dev/null 2>&1; then
         [ -f "$POWERLINE_BINDINGS" ] && source "$POWERLINE_BINDINGS" && break
     done
 fi
+if [ -z "${POWERLINE_COMMAND:-}" ] && command -v powerline-daemon >/dev/null 2>&1; then
+    _powerline_prefix="$(dirname "$(dirname "$(readlink -f "$(command -v powerline-daemon)")")")"
+    if [ -f "$_powerline_prefix/share/bash/powerline.sh" ]; then
+        source "$_powerline_prefix/share/bash/powerline.sh"
+    fi
+    unset _powerline_prefix
+fi
 
 # dotdrop only accepts --cfg after the subcommand, so point it at the repo config via env var.
 # DOTFILES_DIR is recorded on first install by the persist_dotfiles_dir action (rc/pre/00-dotfiles.sh).

@@ -2,6 +2,11 @@
 # Ensure uv and rust/cargo toolchains are installed non-interactively.
 set -euo pipefail
 
+if [ -f /etc/NIXOS ]; then
+    echo "[toolchains] NixOS detected; toolchains and packages are managed by Nix."
+    exit 0
+fi
+
 # 1. Ensure uv is installed
 if command -v uv >/dev/null 2>&1 || [ -x "$HOME/.local/bin/uv" ]; then
     echo "[toolchains] uv is already installed."

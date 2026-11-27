@@ -6,12 +6,14 @@
 [tools.powerline-status]
 manager = "uv"
 group = "shell"
+nix = "powerline"
 
 # --- Terminal Emulator Dependencies ---
 [tools.wezterm]
 manager = "github-release"
 group = "wezterm"
 command = "wezterm"
+nix_channel = "24.05"
 repo = "wezterm/wezterm"
 asset = "WezTerm-.*\\.AppImage$"
 brew_cask = "wezterm"
@@ -57,12 +59,14 @@ icon_name = "nvim"
 [tools.fnm]
 manager = "cargo"
 group = "neovim"
+nix = false
 
 # --- General CLI Utilities (Cargo, UV, GitHub Release) ---
 [tools.du-dust]
 manager = "cargo"
 group = "user"
 command = "dust"
+nix = "dust"
 
 [tools.eza]
 manager = "cargo"
@@ -88,6 +92,7 @@ brew = "glow"
 [tools.termaid]
 manager = "uv"
 group = "user"
+nix = false
 
 # --- Desktop Applications ---
 [tools.obsidian]
@@ -144,6 +149,14 @@ repo = "git-lfs/git-lfs"
 asset = "^git-lfs-linux-{arch}-v[0-9.]+\\.tar\\.gz$"
 arch_map = { x86_64 = "amd64", arm64 = "arm64" }
 brew = "git-lfs"
+
+[tools.gnupg]
+manager = "nix"
+group = "git"
+
+[tools.pinentry-curses]
+manager = "nix"
+group = "git"
 
 # --- Cloud Storage ---
 [tools.rclone]

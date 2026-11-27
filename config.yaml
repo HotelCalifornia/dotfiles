@@ -124,7 +124,7 @@ actions:
   ensure_toolchains: ~/.local/bin/ensure-toolchains.sh
   install_shell_tools: ~/.local/bin/install-tools.py --group shell
   install_neovim_tools: ~/.local/bin/install-tools.py --group neovim
-  ensure_node: ~/.cargo/bin/fnm install --lts && ~/.cargo/bin/fnm default lts-latest
+  ensure_node: '[ -f /etc/NIXOS ] || (~/.cargo/bin/fnm install --lts && ~/.cargo/bin/fnm default lts-latest)'
   install_wezterm: ~/.local/bin/install-tools.py --group wezterm
   seed_wezterm_local: bash "{{@@ _dotdrop_dotpath @@}}/scripts/seed-wezterm-local.sh"
   install_terminal_tools: ~/.local/bin/install-tools.py --group terminal
@@ -270,3 +270,6 @@ profiles:
 
   rise-33:
     include: [wezterm, neovim, user, wayland, claude, git, rclone, apps]
+
+  effrafrax:
+    include: [bash, neovim, user, ai, git]

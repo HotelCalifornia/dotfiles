@@ -769,6 +769,10 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force reinstallation of tools")
     args = parser.parse_args()
 
+    if os.path.isfile("/etc/NIXOS"):
+        print("[nixos] NixOS detected; skipping imperative tool installation (managed via tools.toml + Nix).")
+        return
+
     manifest_path = args.manifest
     if not manifest_path:
         for candidate in [
@@ -800,7 +804,9 @@ def main():
         for name, cfg in generic_tools.items():
             if isinstance(cfg, dict):
                 mgr = cfg.get("manager", "uv")
-                if mgr == "cargo":
+                if mgr == "nix":
+                    continue
+                elif mgr == "cargo":
                     cargo_tools[name] = cfg
                 elif mgr in ("appimage", "github-release", "binary"):
                     release_tools[name] = cfg
