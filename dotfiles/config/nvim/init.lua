@@ -40,8 +40,11 @@ Plug 'nvim-lualine/lualine.nvim'
 Plug 'kyazdani42/nvim-web-devicons'
 Plug('neoclide/coc.nvim', { branch = 'release' })
 Plug 'kyazdani42/nvim-tree.lua'
+Plug 'lambdalisue/vim-suda'
 
 vim.call('plug#end')
+
+vim.g.suda_smart_edit = 1
 
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
@@ -123,12 +126,14 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
             if win ~= nil then
                 vim.api.nvim_set_current_win(win)
             end
-            local buf = vim.api.nvim_create_buf(false, false)
-            local win = vim.api.nvim_open_win(buf, false, {
-                split = 'below',
-                height = 10,
-            })
-            vim.api.nvim_win_call(win, function() return vim.cmd 'terminal' end)
+            if not vim.env.NVIM_NO_TERM then
+                local buf = vim.api.nvim_create_buf(false, false)
+                local win = vim.api.nvim_open_win(buf, false, {
+                    split = 'below',
+                    height = 10,
+                })
+                vim.api.nvim_win_call(win, function() return vim.cmd 'terminal' end)
+            end
         end
 
     end
